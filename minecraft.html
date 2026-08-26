@@ -521,7 +521,7 @@ function terrainHeight(x, z) {
   const det  = fbm(x * 0.075, z * 0.075, 2, 7000);
   const bm   = fbm(x * 0.0011, z * 0.0011, 2, 5252);
   const m = smoothstep(0.15, 0.75, mtn);
-  const mboost = bm > 0.34 ? (bm - 0.34) * 52 + hill * 5 : 0;
+  const mboost = bm > 0.32 ? (bm - 0.32) * 72 + hill * 5 : 0;
   let h = 23 + SURF + cont * 13 + hill * 5 + m * Math.max(0, hill) * 26 + det * (2.4 + smoothstep(0.34, 0.8, bm) * 4.5) + mboost;
   return Math.max(SURF + 3, Math.min(H - 6, Math.floor(h)));
 }
@@ -530,7 +530,7 @@ function biomeAt(x, z) {
   const t = fbm(x * 0.002, z * 0.002, 2, 3131);
   const h = fbm(x * 0.0023, z * 0.0023, 2, 4141);
   const m = fbm(x * 0.0011, z * 0.0011, 2, 5252);
-  if (m > 0.42) return 'mountains';
+  if (m > 0.34) return 'mountains';
   if (t < -0.32) return h > 0 ? 'snowy_forest' : 'tundra';
   if (t > 0.34 && h < -0.05) return 'desert';
   if (t < -0.05) return 'taiga';
@@ -1159,13 +1159,13 @@ function genOverworld(cx, cz) {
       const snowy = biome === 'tundra' || biome === 'snowy_forest';
       const desert = biome === 'desert';
       const mountainous = biome === 'mountains';
-      const rocky = mountainous && h >= 38;
+      const rocky = mountainous && h >= SURF + 38;
       data[bidx(lx, 0, lz)] = BEDROCK;
       for (let y = 1; y <= h; y++) {
         let id;
         if (y === h) {
           id = beach ? (snowy ? SNOW : (hash2(wx, wz, 31337) < 0.25 ? GRAVEL : SAND))
-             : (h >= 45 ? SNOW
+             : (h >= SURF + 45 ? SNOW
              : desert ? SAND
              : rocky ? STONE
              : (snowy ? SNOWY_GRASS : GRASS));
@@ -1204,7 +1204,7 @@ function genOverworld(cx, cz) {
       const th = treeAt(wx, wz);
       if (!th) continue;
       const gh = terrainHeight(wx, wz);
-      if (gh <= SEA + 1 || gh >= 45) continue;
+      if (gh <= SEA + 1 || gh >= SURF + 45) continue;
       const lb = biomeAt(wx, wz);
       const leafId = (lb === 'snowy_forest' || lb === 'taiga' || lb === 'mountains') ? SPRUCE_LEAVES
         : lb === 'cherry' ? CHERRY_LEAVES : LEAVES;
