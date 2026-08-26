@@ -3141,12 +3141,12 @@ function updateSky(dt) {
     solidMat.color.setScalar(0.95);
     cutoutMat.color.setScalar(0.95);
     waterMat.color.setScalar(0.9);
-    cloudMat.opacity = 0.5;
+    cloudMat.opacity = settings.clouds ? 0.5 : 0;
     starMat.opacity = 0;
     sunSprite.visible = true;
     moonSprite.visible = false;
     stars.visible = false;
-    clouds.visible = true;
+    clouds.visible = settings.clouds;
   } else if (curDim === 'nether') {
     daylightVal = 0;
     skyColor.setHex(0x1c0505);
@@ -3193,12 +3193,12 @@ function updateSky(dt) {
     solidMat.color.setScalar(tint);
     cutoutMat.color.setScalar(tint);
     waterMat.color.setScalar(0.5 + 0.5 * daylight);
-    cloudMat.opacity = 0.15 + 0.4 * daylight;
+    cloudMat.opacity = settings.clouds ? 0.15 + 0.4 * daylight : 0;
     starMat.opacity = Math.max(0, 1 - daylight * 1.4) * 0.9;
     sunSprite.visible = true;
     moonSprite.visible = true;
     stars.visible = true;
-    clouds.visible = true;
+    clouds.visible = settings.clouds;
 
     const ang = tod * Math.PI * 2 - Math.PI / 2;
     const sd = new THREE.Vector3(Math.cos(ang), Math.sin(ang), 0.3).normalize();
@@ -3291,7 +3291,22 @@ function splashSound() { burst(850, 0.3, 0.7, 0.4); tone(320, 0.25, 'sine', 0.12
 function thud() { burst(150, 0.05, 1, 0.2); }
 function boomSound() { burst(90, 0.7, 0.4, 0.5); tone(45, 0.9, 'sine', 0.2); burst(400, 0.3, 0.8, 0.3); }
 function sleepInBed(bx, by, bz) {
-  respawnPos = new THREE.Vector3(bx + 0.5, by + 1.02, bz + 0.5);
+  let gx = bx, gz = bz, gy = by;
+  for (let r = 0; r <= 3; r++) {
+    for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
+      if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+      for (let y = H - 2; y > 1; y--) {
+        const b = getBlock(bx + dx, y, bz + dz);
+        if (b !== AIR && b !== WATER && b !== LAVA) {
+          if (getBlock(bx + dx, y + 1, bz + dz) === AIR && getBlock(bx + dx, y + 2, bz + dz) === AIR) {
+            gx = bx + dx; gy = y; gz = bz + dz; r = 99; break;
+          }
+          break;
+        }
+      }
+    }
+  }
+  respawnPos = new THREE.Vector3(gx + 0.5, gy + 1.02, gz + 0.5);
   respawnDim = curDim;
   const s = Math.sin(tod * Math.PI * 2);
   if (s < 0.1) {
