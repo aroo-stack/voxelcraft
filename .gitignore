@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env
+*.db
+
+# Node
+node_modules/
+dist/
+
+# Misc
+.DS_Store
+.pytest_cache/
+
+# Misc 2
+raycast_best.json
+*.log
+npm-debug.log*
