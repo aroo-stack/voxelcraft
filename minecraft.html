@@ -204,6 +204,14 @@
   }
   #debug.visible { display: block; }
 
+  #fps {
+    position: absolute; top: 10px; right: 14px; z-index: 6;
+    color: #9fe08a; background: rgba(0,0,0,.55); padding: 4px 8px; border-radius: 6px;
+    font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700;
+    border: 1px solid rgba(120,255,120,.15); pointer-events: none; line-height: 1;
+  }
+  #fps.hidden { display: none; }
+
   #watertint { position: absolute; inset: 0; background: rgba(18,60,140,.34); display: none; z-index: 4; pointer-events: none; }
   #portaltint { position: absolute; inset: 0; background: rgba(120,40,200,.38); display: none; z-index: 4; pointer-events: none; }
   #lavatint { position: absolute; inset: 0; background: rgba(220,80,10,.5); display: none; z-index: 4; pointer-events: none; }
@@ -276,6 +284,8 @@
   <h2>SETTINGS</h2>
   <div class="panel createpanel">
     <button id="btn-torch" class="mcbtn">Torches & Lighting: ON</button>
+    <button id="btn-clouds" class="mcbtn">Clouds: ON</button>
+    <button id="btn-fps" class="mcbtn">FPS Counter: ON</button>
     <button id="btn-achset" class="mcbtn">Achievements: ON</button>
     <button id="btn-set-back" class="mcbtn small">Back</button>
   </div>
@@ -322,6 +332,7 @@
 <div id="portaltint"></div>
 <div id="lavatint"></div>
 <div id="endportaltint"></div>
+<div id="fps">60 FPS</div>
 <div id="bossbar"><div id="bosslabel">ENDER DRAGON</div><div id="bosstrack"><div id="bossfill"></div></div></div>
 <div id="crosshair"></div>
 <div id="hearts"></div>
@@ -1080,7 +1091,7 @@ let chunks = dims.over.chunks;
 let editsByChunk = dims.over.edits;
 const portals = { over: null, nether: null };
 let portalTime = 0, portalCooldown = 0;
-const settings = { lighting: true, achievements: true };
+const settings = { lighting: true, achievements: true, fpsCounter: true, clouds: true };
 try {
   const sv = JSON.parse(localStorage.getItem('voxelcraft_settings'));
   if (sv) Object.assign(settings, sv);
@@ -1381,7 +1392,7 @@ function buildChunkMesh(ch) {
   };
   const data = ch.data;
   let lightGrid = null;
-  const LW = 40, LHX = ch.cx * 16 - 12, LHZ = ch.cz * 16 - 12;
+  const LW = 32, LHX = ch.cx * 16 - 8, LHZ = ch.cz * 16 - 8;
   if (settings.lighting) {
     lightGrid = new Uint8Array(LW * LW * H);
     const region = new Uint8Array(LW * LW * H);
@@ -3199,7 +3210,7 @@ function updateSky(dt) {
 
     clouds.position.x = cp.x;
     clouds.position.z = cp.z;
-    cloudTex.offset.set((cp.x * 0.004 + performance.now() * 0.0000035) % 1, (cp.z * 0.004) % 1);
+    if (frameCount % 2 === 0) cloudTex.offset.set((cp.x * 0.004 + performance.now() * 0.0000035) % 1, (cp.z * 0.004) % 1);
   }
 
   waterTex.offset.x = (performance.now() * 0.00002) % 1;
@@ -3931,6 +3942,7 @@ function lockPointer() {
   } catch (e) { }
 }
 
+let settingsReturn = null;
 document.getElementById('btn-single').addEventListener('click', () => { renderWorldList(); showScreen(worldMenuEl); });
 document.getElementById('btn-options').addEventListener('click', () => openSettings());
 function openSettings() {
@@ -3948,9 +3960,15 @@ function setSetting(k, v) {
 }
 function syncSettingButtons() {
   document.getElementById('btn-torch').textContent = 'Torches & Lighting: ' + (settings.lighting ? 'ON' : 'OFF');
+  document.getElementById('btn-clouds').textContent = 'Clouds: ' + (settings.clouds ? 'ON' : 'OFF');
+  document.getElementById('btn-fps').textContent = 'FPS Counter: ' + (settings.fpsCounter ? 'ON' : 'OFF');
   document.getElementById('btn-achset').textContent = 'Achievements: ' + (settings.achievements ? 'ON' : 'OFF');
+  document.getElementById('fps').classList.toggle('hidden', !settings.fpsCounter);
+  clouds.visible = settings.clouds && curDim !== 'nether' && curDim !== 'end';
 }
 document.getElementById('btn-torch').addEventListener('click', () => setSetting('lighting', !settings.lighting));
+document.getElementById('btn-clouds').addEventListener('click', () => setSetting('clouds', !settings.clouds));
+document.getElementById('btn-fps').addEventListener('click', () => setSetting('fpsCounter', !settings.fpsCounter));
 document.getElementById('btn-achset').addEventListener('click', () => setSetting('achievements', !settings.achievements));
 document.getElementById('btn-set-back').addEventListener('click', () => {
   showScreen(started ? pauseEl : blocker);
@@ -4079,13 +4097,26 @@ window.VC = {
 
 let titleDrift = 0;
 let lastT = performance.now();
+let frameCount = 0;
 function loop(now) {
   requestAnimationFrame(loop);
   const dt = Math.min((now - lastT) / 1000, 0.05);
   lastT = now;
+  if (started || !started) {
+    fpsEma += (1 / Math.max(dt, 1e-4) - fpsEma) * 0.08;
+    if (settings.fpsCounter) {
+      const fpsEl = document.getElementById('fps');
+      if (fpsEl) {
+        const fps = Math.round(fpsEma);
+        fpsEl.textContent = fps + ' FPS';
+        fpsEl.style.color = fps < 30 ? '#ff6b6b' : fps < 50 ? '#ffd166' : '#9fe08a';
+      }
+    }
+  }
+  frameCount++;
 
   if (started) {
-    streamChunks(player.pos.x, player.pos.z, 9);
+    streamChunks(player.pos.x, player.pos.z, 6);
     updatePlayer(dt);
     updateMobs(dt);
     const hit = raycast();
