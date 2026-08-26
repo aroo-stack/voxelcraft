@@ -223,12 +223,6 @@
     flex: 1; background: transparent; border: none; outline: none;
     color: #fff; font-family: 'Courier New', monospace; font-size: 15px;
   }
-  #loading { position: absolute; inset: 0; z-index: 15; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-  #loading.hidden { display: none; }
-  .loadbox { background: rgba(6,8,16,.8); border: 1px solid rgba(255,255,255,.2); border-radius: 8px; padding: 18px 26px; width: 340px; text-align: center; }
-  #loadlabel { color: #cfe3ff; font-size: 14px; letter-spacing: 1px; margin-bottom: 10px; font-family: 'Courier New', monospace; }
-  #loadtrack { height: 8px; background: rgba(255,255,255,.12); border-radius: 4px; overflow: hidden; }
-  #loadfill { height: 100%; width: 0%; background: linear-gradient(90deg, #7ac74f, #b5e48c); transition: width .15s; }
   #cmdsuggest {
     position: absolute; bottom: 62px; left: 14px; right: 14px; z-index: 30;
     background: rgba(0,0,0,.88); border: 1px solid rgba(255,255,255,.2); border-radius: 4px;
@@ -336,7 +330,6 @@
 <div id="itemname"></div>
 <div id="achtoast"></div>
 <div id="debug"></div>
-<div id="loading" class="hidden"><div class="loadbox"><div id="loadlabel">Generating terrain…</div><div id="loadtrack"><div id="loadfill"></div></div></div></div>
 <div id="cmdsuggest" class="hidden"></div>
 <div id="cmdbar" class="hidden"><span>&gt;</span><input id="cmdinput" spellcheck="false" autocomplete="off" maxlength="80"></div>
 <div id="errbox"></div>
@@ -372,6 +365,7 @@ const AIR = 0, GRASS = 1, DIRT = 2, STONE = 3, SAND = 4, LOG = 5,
       PUMPKIN = 26, SPRUCE_LEAVES = 27,
       NETHERRACK = 28, SOUL_SAND = 29, NETHERITE_BLOCK = 30, LAVA = 31, PORTAL = 32,
       SANDSTONE = 33, CACTUS = 34, TORCH = 50, BED = 51,
+      HOLYSTONE = 52, SKYROOT_LOG = 53, SKYROOT_LEAVES = 54, AETHER_PORTAL = 55,
       STAIRS_OAK = 40, STAIRS_COBBLE = 44, DOOR = 48, DOOR_OPEN = 49,
       CHERRY_LEAVES = 39,
       END_STONE = 35, END_PORTAL = 36, DRAGON_EGG = 37, OBSIDIAN = 38,
@@ -431,6 +425,10 @@ const BLOCKS = [
   { name: 'Cobble Stairs',  top: 9,  side: 9,  bot: 9 },
   { name: 'Oak Door',       top: 43, side: 43, bot: 43, cutout: true },
   { name: 'Oak Door',       top: 44, side: 44, bot: 44, cutout: true, passable: true },
+  { name: 'Holystone',      top: 48, side: 48, bot: 48 },
+  { name: 'Skyroot Log',    top: 50, side: 49, bot: 50 },
+  { name: 'Skyroot Leaves', top: 50, side: 50, bot: 50, cutout: true },
+  { name: 'Aether Portal',  top: 51, side: 51, bot: 51, portal: true },
 ];
 
 const PLACEABLE = [
@@ -438,7 +436,7 @@ const PLACEABLE = [
   LEAVES, SPRUCE_LEAVES, GLASS, BRICKS, BOOKSHELF, GLOWSTONE, PUMPKIN, WOOL_WHITE,
   WOOL_RED, WOOL_BLUE, WOOL_YELLOW, SNOW, SNOWY_GRASS, COAL_ORE, IRON_ORE, GOLD_ORE,
   DIAMOND_ORE, NETHERRACK, SOUL_SAND, NETHERITE_BLOCK, SANDSTONE, CACTUS, END_STONE, OBSIDIAN, DRAGON_EGG, CHERRY_LEAVES,
-  STAIRS_OAK, STAIRS_COBBLE, DOOR, TORCH, BED, WATER_BUCKET, LAVA_BUCKET,
+  STAIRS_OAK, STAIRS_COBBLE, DOOR, TORCH, BED, HOLYSTONE, SKYROOT_LOG, SKYROOT_LEAVES, WATER_BUCKET, LAVA_BUCKET,
 ];
 let HOTBAR = [GRASS, STONE, PLANKS, GLASS, BRICKS, GLOWSTONE, LOG, NETHERITE_BLOCK, FLINT_AND_STEEL];
 
@@ -836,6 +834,39 @@ atlasCanvas.width = atlasCanvas.height = ATLAS_PX;
     c.fillStyle = 'rgba(70,50,110,.5)';
     c.fillRect(2, 2, 1, 6); c.fillRect(10, 6, 1, 7); c.fillRect(6, 10, 5, 1);
   });
+  T(48, () => {
+    speck(198, 203, 214, 9);
+    for (let i = 0; i < 8; i++) {
+      c.fillStyle = 'rgba(150,158,175,.7)';
+      c.fillRect(rnd() * 13 | 0, rnd() * 13 | 0, 2, 2);
+    }
+  });
+  T(49, () => {
+    for (let x = 0; x < 16; x++) {
+      const bark = x % 4 === 0;
+      for (let y = 0; y < 16; y++) {
+        const n = (rnd() - 0.5) * 16;
+        c.fillStyle = bark ? `rgb(${120 + n | 0},${142 + n | 0},${124 + n | 0})` : `rgb(${168 + n | 0},${196 + n | 0},${176 + n | 0})`;
+        c.fillRect(x, y, 1, 1);
+      }
+    }
+  });
+  T(50, () => {
+    c.clearRect(0, 0, 16, 16);
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+      if (rnd() < 0.1) continue;
+      const n = (rnd() - 0.5) * 30;
+      c.fillStyle = `rgb(${196 + n * 0.4 | 0},${228 + n * 0.5 | 0},${206 + n * 0.4 | 0})`;
+      c.fillRect(x, y, 1, 1);
+    }
+  });
+  T(51, () => {
+    c.fillStyle = '#1a1408'; c.fillRect(0, 0, 16, 16);
+    for (let i = 0; i < 26; i++) {
+      c.fillStyle = rnd() < 0.6 ? 'rgba(255,215,110,.9)' : 'rgba(255,240,180,.9)';
+      c.fillRect(rnd() * 15 | 0, rnd() * 15 | 0, 1, 1);
+    }
+  });
   T(45, () => {
     c.clearRect(0, 0, 16, 16);
     c.fillStyle = '#7a5a30';
@@ -1005,6 +1036,29 @@ const waterMat = new THREE.MeshBasicMaterial({ map: waterTex, transparent: true,
 const lavaMat = new THREE.MeshBasicMaterial({ map: lavaTex, transparent: true, opacity: 0.96, depthWrite: false, side: THREE.DoubleSide });
 const portalMat = new THREE.MeshBasicMaterial({ map: portalTex, transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide });
 const endPortalMat = new THREE.MeshBasicMaterial({ map: endPortalTex, transparent: true, opacity: 0.95, depthWrite: false, side: THREE.DoubleSide });
+const aetherPortalCanvas = document.createElement('canvas');
+aetherPortalCanvas.width = aetherPortalCanvas.height = 64;
+{
+  const c = aetherPortalCanvas.getContext('2d');
+  const rnd = mulberry(727);
+  for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) {
+    const n = Math.sin(x * 0.19 + Math.sin(y * 0.16) * 2.4) * 22 + (rnd() - 0.5) * 24;
+    c.fillStyle = `rgb(${215 + n * 0.4 | 0},${178 + n * 0.5 | 0},${70 + n * 0.3 | 0})`;
+    c.fillRect(x, y, 1, 1);
+  }
+  for (let i = 0; i < 30; i++) {
+    c.fillStyle = 'rgba(255,246,200,.9)';
+    c.fillRect(rnd() * 62 | 0, rnd() * 62 | 0, 1 + rnd() * 2 | 0, 1);
+  }
+}
+const aetherPortalTex = new THREE.CanvasTexture(aetherPortalCanvas);
+aetherPortalTex.wrapS = aetherPortalTex.wrapT = THREE.RepeatWrapping;
+aetherPortalTex.flipY = false;
+aetherPortalTex.magFilter = THREE.NearestFilter;
+aetherPortalTex.minFilter = THREE.NearestFilter;
+aetherPortalTex.generateMipmaps = false;
+aetherPortalTex.colorSpace = THREE.SRGBColorSpace;
+const aetherPortalMat = new THREE.MeshBasicMaterial({ map: aetherPortalTex, transparent: true, opacity: 0.92, depthWrite: false, side: THREE.DoubleSide });
 
 const FACES = [
   { dir: [-1, 0, 0], shade: 0.65, ax: 0, corners: [[0,1,0,0,1],[0,0,0,0,0],[0,1,1,1,1],[0,0,1,1,0]] },
@@ -1019,6 +1073,7 @@ const dims = {
   over: { chunks: new Map(), edits: new Map() },
   nether: { chunks: new Map(), edits: new Map() },
   end: { chunks: new Map(), edits: new Map() },
+  aether: { chunks: new Map(), edits: new Map() },
 };
 let curDim = 'over';
 let chunks = dims.over.chunks;
@@ -1070,7 +1125,87 @@ function getBlock(wx, wy, wz) {
 }
 
 function genChunkData(cx, cz) {
-  return curDim === 'nether' ? genNether(cx, cz) : curDim === 'end' ? genEnd(cx, cz) : genOverworld(cx, cz);
+  return curDim === 'nether' ? genNether(cx, cz) : curDim === 'end' ? genEnd(cx, cz) : curDim === 'aether' ? genAether(cx, cz) : genOverworld(cx, cz);
+}
+
+function aetherCenter(ix, iz) {
+  if (ix === 0 && iz === 0) return [0, 0];
+  return [ix * 80 + (Math.floor(hash2(ix * 7 + 3, iz * 7 + 11, 9501) * 40) - 20), iz * 80 + (Math.floor(hash2(ix * 7 + 5, iz * 7 + 13, 9502) * 40) - 20)];
+}
+function islandR(ix, iz) { return 18 + Math.floor(hash2(ix, iz, 9503) * 8); }
+function islandTop(ix, iz) { return SURF + 38 + Math.floor(hash2(ix, iz, 9504) * 8); }
+
+function genAether(cx, cz) {
+  const data = new Uint8Array(CH * CH * H);
+  const bx0 = cx * 16, bz0 = cz * 16;
+  const cix = Math.floor(bx0 / 80), ciz = Math.floor(bz0 / 80);
+  const centers = [];
+  for (let iz = ciz - 1; iz <= ciz + 1; iz++) for (let ix = cix - 1; ix <= cix + 1; ix++) {
+    const [ccx, ccz] = aetherCenter(ix, iz);
+    centers.push({ ix, iz, cx: ccx, cz: ccz, r: islandR(ix, iz), top: islandTop(ix, iz) });
+  }
+  for (let lz = 0; lz < 16; lz++) for (let lx = 0; lx < 16; lx++) {
+    const wx = bx0 + lx, wz = bz0 + lz;
+    for (const c of centers) {
+      const d = Math.hypot(wx - c.cx, wz - c.cz);
+      if (d < c.r) {
+        const edge = c.r - d;
+        const top = c.top + Math.min(3, Math.floor(edge * 0.15 + hash2(wx, wz, 9601) * 2));
+        const bot = c.top - Math.min(14, Math.floor(edge * 0.5 + hash2(wx, wz, 9602) * 4)) - 2;
+        for (let y = Math.max(1, bot); y <= Math.min(H - 2, top); y++) data[bidx(lx, y, lz)] = HOLYSTONE;
+      }
+    }
+  }
+  for (const c of centers) {
+    if (c.cx >= bx0 && c.cx < bx0 + 16 && c.cz >= bz0 && c.cz < bz0 + 16) {
+      const lx = c.cx - bx0, lz = c.cz - bz0;
+      let top = c.top;
+      for (let y = H - 2; y > SURF + 20; y--) if (data[bidx(lx, y, lz)] === HOLYSTONE) { top = y; break; }
+      const th = 4 + Math.floor(hash2(c.cx, c.cz, 9505) * 3);
+      for (let ty = 1; ty <= th && top + ty < H - 1; ty++) data[bidx(lx, top + ty, lz)] = SKYROOT_LOG;
+      for (let ox = -2; ox <= 2; ox++) for (let oz = -2; oz <= 2; oz++) for (let oy = 0; oy <= 2; oy++) {
+        if (Math.abs(ox) + Math.abs(oz) + oy > 3) continue;
+        const px = lx + ox, py = top + th + oy, pz = lz + oz;
+        if (px >= 0 && px < 16 && pz >= 0 && pz < 16 && py < H - 1 && data[bidx(px, py, pz)] === AIR) data[bidx(px, py, pz)] = SKYROOT_LEAVES;
+      }
+    }
+  }
+  for (const c of centers) {
+    for (let wf = 0; wf < 2; wf++) {
+      const ang = hash2(c.ix * 3 + wf, c.iz * 3 - wf, 9603) * Math.PI * 2;
+      const ex = c.cx + Math.round(Math.cos(ang) * (c.r - 1));
+      const ez = c.cz + Math.round(Math.sin(ang) * (c.r - 1));
+      const lx = ex - bx0, lz = ez - bz0;
+      if (lx < 0 || lx > 15 || lz < 0 || lz > 15) continue;
+      let top = 0;
+      for (let y = H - 2; y > 1; y--) if (data[bidx(lx, y, lz)] !== AIR) { top = y; break; }
+      const wlen = 10 + Math.floor(hash2(ex, ez, 9604) * 12);
+      for (let y = top; y > Math.max(1, top - wlen); y--) if (data[bidx(lx, y, lz)] === AIR) data[bidx(lx, y, lz)] = WATER;
+    }
+  }
+  for (const c of centers) {
+    const nb = [[aetherCenter(c.ix + 1, c.iz), islandTop(c.ix + 1, c.iz)], [aetherCenter(c.ix, c.iz + 1), islandTop(c.ix, c.iz + 1)]];
+    for (const [cc, cy] of nb) {
+      const ax = c.cx, az = c.cz, ay = islandTop(c.ix, c.iz);
+      const bx = cc[0], bz2 = cc[1];
+      const dx = bx - ax, dz = bz2 - az;
+      const len = Math.hypot(dx, dz);
+      const steps = Math.ceil(len * 2);
+      for (let s = 0; s <= steps; s++) {
+        const t = s / steps;
+        const px = Math.round(ax + dx * t), pz = Math.round(az + dz * t);
+        const lx = px - bx0, lz = pz - bz0;
+        if (lx < 0 || lx > 15 || lz < 0 || lz > 15) continue;
+        const y = Math.round(ay + (cy - ay) * t - Math.sin(t * Math.PI) * 2);
+        if (y < 2 || y >= H - 1) continue;
+        if (data[bidx(lx, y, lz)] === AIR) data[bidx(lx, y, lz)] = HOLYSTONE;
+        if (data[bidx(lx, y - 1, lz)] === AIR) data[bidx(lx, y - 1, lz)] = HOLYSTONE;
+      }
+    }
+  }
+  const ed = editsByChunk.get(ckey(cx, cz));
+  if (ed) for (const [i, id] of ed) data[i] = id;
+  return data;
 }
 
 function genEnd(cx, cz) {
@@ -1237,6 +1372,7 @@ function buildChunkMesh(ch) {
   const lpos = [], luv = [];
   const ppos = [], puv = [];
   const epos = [], euv = [];
+  const apos = [], auv = [];
   const bx0 = ch.cx * 16, bz0 = ch.cz * 16;
   const PAD = 0.5 / ATLAS_PX;
   const tileUV = t => {
@@ -1345,6 +1481,7 @@ function buildChunkMesh(ch) {
         const isLavaBlk = id === LAVA;
         const isPortalBlk = id === PORTAL;
         const isEndPortalBlk = id === END_PORTAL;
+        const isAetherPortalBlk = id === AETHER_PORTAL;
         const isCut = !!info.cutout;
         const isGlow = !!info.glow;
         for (const f of FACES) {
@@ -1412,6 +1549,14 @@ function buildChunkMesh(ch) {
             }
             continue;
           }
+          if (isAetherPortalBlk) {
+            for (const vi of [0, 1, 2, 2, 1, 3]) {
+              const cn = f.corners[vi];
+              apos.push(wx + cn[0], y + cn[1], wz + cn[2]);
+              auv.push(cn[3], cn[4]);
+            }
+            continue;
+          }
           if (isGlow) {
             for (const vi of [0, 1, 2, 2, 1, 3]) {
               const p = vert(vi);
@@ -1458,6 +1603,7 @@ function buildChunkMesh(ch) {
   mk(lpos, luv, null, lavaMat, 2);
   mk(ppos, puv, null, portalMat, 2);
   mk(epos, euv, null, endPortalMat, 2);
+  mk(apos, auv, null, aetherPortalMat, 2);
   ch.dirty = false;
 }
 
@@ -1542,9 +1688,7 @@ function rebuildGenQueue(pcx, pcz) {
     }
   }
   genQueue.sort((a, b) => a[2] - b[2]);
-  genTotal = Math.max(genTotal, genQueue.length);
 }
-let genTotal = 0;
 function streamChunks(px, pz, budgetMs) {
   const pcx = Math.floor(px) >> 4, pcz = Math.floor(pz) >> 4;
   if (pcx !== lastPcx || pcz !== lastPcz) {
@@ -1916,9 +2060,19 @@ function trySpawnMob() {
   const dist = 22 + Math.random() * 18;
   const wx = Math.floor(player.pos.x + Math.sin(ang) * dist);
   const wz = Math.floor(player.pos.z + Math.cos(ang) * dist);
+  if (curDim === 'aether') {
+    if (countMobs('pig') >= 4) return;
+    for (let y = SURF + 60; y > SURF + 20; y--) {
+      if (getBlock(wx, y, wz) === HOLYSTONE && getBlock(wx, y + 1, wz) === AIR && getBlock(wx, y + 2, wz) === AIR) {
+        createMob('pig', wx + 0.5, y + 1.01, wz + 0.5);
+        return;
+      }
+    }
+    return;
+  }
   if (curDim === 'nether') {
     if (countMobs('piglin') >= 6) return;
-    for (let y = 13; y < 48; y++) {
+    for (let y = SURF + 13; y < SURF + 48; y++) {
       const b = getBlock(wx, y, wz);
       if (b !== AIR && b !== LAVA && getBlock(wx, y + 1, wz) === AIR && getBlock(wx, y + 2, wz) === AIR) {
         createMob('piglin', wx + 0.5, y + 1.01, wz + 0.5);
@@ -1988,7 +2142,7 @@ function explode(cx, cy, cz, r) {
     const wx = cx + dx, wy = cy + dy, wz = cz + dz;
     if (wy < 1 || wy >= H) continue;
     const b = getBlock(wx, wy, wz);
-    if (b === AIR || b === BEDROCK || b === OBSIDIAN || b === WATER || b === PORTAL || b === END_PORTAL || b === END_STONE && false) continue;
+    if (b === AIR || b === BEDROCK || b === OBSIDIAN || b === WATER || b === PORTAL || b === END_PORTAL || b === AETHER_PORTAL) continue;
     rawSet(wx, wy, wz, AIR);
   }
   const dp = player.pos.distanceTo(new THREE.Vector3(cx + 0.5, cy + 0.5, cz + 0.5));
@@ -2496,7 +2650,7 @@ function tryLightPortal(bx, by, bz) {
     let y0 = by, guard = 0;
     while (y0 > 1 && getBlock(bx, y0 - 1, bz) === AIR && guard++ < 6) y0--;
     const frameId = getBlock(bx, y0 - 1, bz);
-    if (frameId !== NETHERITE_BLOCK && frameId !== END_STONE) continue;
+    if (frameId !== NETHERITE_BLOCK && frameId !== END_STONE && frameId !== GLOWSTONE) continue;
     let x0 = bx, z0 = bz;
     guard = 0;
     while (getBlock(x0 - dx, y0, z0 - dz) === AIR && guard++ < 3) { x0 -= dx; z0 -= dz; }
@@ -2521,7 +2675,7 @@ function tryLightPortal(bx, by, bz) {
       for (let h = 0; h < height && ok; h++)
         if (getBlock(x0 + dx * w, y0 + h, z0 + dz * w) !== AIR) ok = false;
     if (!ok) continue;
-    const fillId = frameId === END_STONE ? END_PORTAL : PORTAL;
+    const fillId = frameId === END_STONE ? END_PORTAL : frameId === GLOWSTONE ? AETHER_PORTAL : PORTAL;
     for (let w = 0; w < width; w++)
       for (let h = 0; h < height; h++)
         setBlock(x0 + dx * w, y0 + h, z0 + dz * w, fillId, true);
@@ -2614,14 +2768,24 @@ function enterDimension(target, dest, silent) {
     for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) ensureChunkData(pcx0 + dx, pcz0 + dz);
     let hasPortal = false;
     const bx = Math.floor(dest.x), by = Math.floor(dest.y), bz = Math.floor(dest.z);
-    for (let dx = -3; dx <= 3 && !hasPortal; dx++)
-      for (let dy = -3; dy <= 3 && !hasPortal; dy++)
-        for (let dz = -3; dz <= 3 && !hasPortal; dz++)
-          if (getBlock(bx + dx, by + dy, bz + dz) === PORTAL || getBlock(bx + dx, by + dy, bz + dz) === END_PORTAL) hasPortal = true;
+    for (let dx = -3; dx <= 3 && !hasPortal; dx++) {
+      for (let dy = -3; dy <= 3 && !hasPortal; dy++) {
+        for (let dz = -3; dz <= 3 && !hasPortal; dz++) {
+          const pb = getBlock(bx + dx, by + dy, bz + dz);
+          if (pb === PORTAL || pb === END_PORTAL || pb === AETHER_PORTAL) hasPortal = true;
+        }
+      }
+    }
     if (!hasPortal) {
       if (target === 'end') {
-        let sy = 31;
-        for (let y = 44; y > 10; y--) {
+        let sy = SURF + 31;
+        for (let y = SURF + 44; y > SURF + 10; y--) {
+          if (isSolid(getBlock(bx, y, bz))) { sy = y + 1; break; }
+        }
+        dest = new THREE.Vector3(bx + 0.5, sy + 0.02, bz + 0.5);
+      } else if (target === 'aether') {
+        let sy = SURF + 50;
+        for (let y = SURF + 55; y > SURF + 20; y--) {
           if (isSolid(getBlock(bx, y, bz))) { sy = y + 1; break; }
         }
         dest = new THREE.Vector3(bx + 0.5, sy + 0.02, bz + 0.5);
@@ -2631,8 +2795,15 @@ function enterDimension(target, dest, silent) {
     }
   } else if (target === 'end') {
     for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) ensureChunkData(dx, dz);
-    let sy = 31;
+    let sy = SURF + 31;
     for (let y = SURF + 44; y > SURF + 20; y--) {
+      if (isSolid(getBlock(0, y, 0))) { sy = y + 1; break; }
+    }
+    dest = new THREE.Vector3(0.5, sy + 0.02, 0.5);
+  } else if (target === 'aether') {
+    for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) ensureChunkData(dx, dz);
+    let sy = SURF + 50;
+    for (let y = SURF + 55; y > SURF + 20; y--) {
       if (isSolid(getBlock(0, y, 0))) { sy = y + 1; break; }
     }
     dest = new THREE.Vector3(0.5, sy + 0.02, 0.5);
@@ -2689,7 +2860,7 @@ function raycast() {
   let dist = 0;
   for (let i = 0; i < 128; i++) {
     const id = getBlock(x, y, z);
-    if (id !== AIR && !BLOCKS[id].liquid && id !== END_PORTAL) return { bx: x, by: y, bz: z, nx, ny, nz, id, t: dist };
+    if (id !== AIR && !BLOCKS[id].liquid && id !== END_PORTAL && id !== AETHER_PORTAL) return { bx: x, by: y, bz: z, nx, ny, nz, id, t: dist };
     if (tx < ty && tx < tz) {
       if (tx > REACH) break;
       x += stepX; dist = tx; tx += tdx; nx = -stepX; ny = 0; nz = 0;
@@ -2824,13 +2995,17 @@ function updatePlayer(dt) {
 
   const inPortal = getBlock(Math.floor(p.x), Math.floor(p.y + 0.9), Math.floor(p.z)) === PORTAL;
   const inEndPortal = getBlock(Math.floor(p.x), Math.floor(p.y + 0.9), Math.floor(p.z)) === END_PORTAL;
-  portaltint.style.display = inPortal ? 'block' : 'none';
+  const inAetherPortal = getBlock(Math.floor(p.x), Math.floor(p.y + 0.9), Math.floor(p.z)) === AETHER_PORTAL;
+  portaltint.style.display = inPortal || inAetherPortal ? 'block' : 'none';
   endportaltint.style.display = inEndPortal ? 'block' : 'none';
   if (portalCooldown > 0) portalCooldown -= dt;
-  if (locked && portalCooldown <= 0 && (inPortal || inEndPortal)) {
+  if (locked && portalCooldown <= 0 && (inPortal || inEndPortal || inAetherPortal)) {
     portalTime += dt;
-    if (portalTime > (inEndPortal ? 1 : 1.5)) {
-      if (inEndPortal) {
+    if (portalTime > (inPortal ? 1.5 : 1)) {
+      if (inAetherPortal) {
+        if (curDim === 'aether') enterDimension('over', portals.over ? portals.over.clone() : null, false);
+        else enterDimension('aether', null, false);
+      } else if (inEndPortal) {
         if (curDim === 'end') enterDimension('over', portals.over ? portals.over.clone() : null, false);
         else enterDimension('end', null, false);
       } else {
@@ -2932,7 +3107,7 @@ function updateDebug(dt) {
     `fps ${fpsEma.toFixed(0)}\n` +
     `xyz ${p.x.toFixed(1)} ${p.y.toFixed(1)} ${p.z.toFixed(1)}\n` +
     `chunk ${Math.floor(p.x) >> 4} ${Math.floor(p.z) >> 4}  facing ${facing}\n` +
-    `dim ${curDim === 'nether' ? 'NETHER' : curDim === 'end' ? 'THE END' : 'overworld'}  ${curDim === 'nether' ? '' : 'biome ' + (BNAMES[biomeAt(Math.floor(p.x), Math.floor(p.z))] || 'plains')}\n` +
+    `dim ${curDim === 'nether' ? 'NETHER' : curDim === 'end' ? 'THE END' : curDim === 'aether' ? 'AETHER' : 'overworld'}  ${curDim === 'nether' ? '' : 'biome ' + (BNAMES[biomeAt(Math.floor(p.x), Math.floor(p.z))] || 'plains')}\n` +
     `mode ${gameMode}\n` +
     `chunks ${chunks.size}  queue ${genQueue.length}  mobs ${mobs.length}\n` +
     `tris ${(renderer.info.render.triangles / 1000).toFixed(0)}k  calls ${renderer.info.render.calls}\n` +
@@ -2945,7 +3120,23 @@ function updateSky(dt) {
   tod = (tod + dt / DAY_LEN) % 1;
   const s = Math.sin(tod * Math.PI * 2);
   const daylight = smoothstep(-0.12, 0.25, s);
-  if (curDim === 'nether') {
+  if (curDim === 'aether') {
+    daylightVal = 1;
+    skyColor.setHex(0x9ed2ff);
+    scene.fog.near = RD * 16 * 0.5;
+    scene.fog.far = RD * 16 * 0.95;
+    renderer.setClearColor(skyColor);
+    scene.fog.color.copy(skyColor);
+    solidMat.color.setScalar(0.95);
+    cutoutMat.color.setScalar(0.95);
+    waterMat.color.setScalar(0.9);
+    cloudMat.opacity = 0.5;
+    starMat.opacity = 0;
+    sunSprite.visible = true;
+    moonSprite.visible = false;
+    stars.visible = false;
+    clouds.visible = true;
+  } else if (curDim === 'nether') {
     daylightVal = 0;
     skyColor.setHex(0x1c0505);
     scene.fog.near = RD * 16 * 0.3;
@@ -3594,6 +3785,7 @@ const CMD_LIST = [
   { c: 'time <day|night|sunset>', d: 'set time of day' },
   { c: 'gamemode <mode>', d: 'survival or creative' },
   { c: 'end', d: 'go to the End' },
+  { c: 'aether', d: 'go to the Aether' },
   { c: 'over', d: 'return to the Overworld' },
   { c: 'seed', d: 'show world seed' },
 ];
@@ -3699,6 +3891,9 @@ function runCommand(raw) {
     else toast('Usage: /gamemode creative|survival');
   } else if (cmd === 'seed') {
     toast('Seed: ' + seed);
+  } else if (cmd === 'aether') {
+    enterDimension('aether', null);
+    toast('Entering the Aether');
   } else if (cmd === 'end') {
     enterDimension('end', null);
     toast('Entering the End');
@@ -3904,13 +4099,6 @@ function loop(now) {
     titleDrift += dt * 0.05;
     camera.position.set(Math.sin(titleDrift) * 4, 42, 8.5 + Math.cos(titleDrift) * 4);
     camera.lookAt(0, 30, 0);
-  }
-  const loadEl = document.getElementById('loading');
-  if (started && genQueue.length > 0) {
-    loadEl.classList.remove('hidden');
-    document.getElementById('loadfill').style.width = Math.round((1 - genQueue.length / Math.max(1, genTotal)) * 100) + '%';
-  } else {
-    loadEl.classList.add('hidden');
   }
   updateSky(dt);
   renderer.render(scene, camera);
