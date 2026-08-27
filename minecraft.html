@@ -15,7 +15,7 @@
     background: rgba(6,8,16,.35);
     cursor: default; user-select: none;
   }
-  #blocker.hidden, #pause.hidden, #inv.hidden, #worldmenu.hidden, #createworld.hidden, #settingsmenu.hidden { display: none; }
+  #blocker.hidden, #pause.hidden, #inv.hidden, #chestInv.hidden, #worldmenu.hidden, #createworld.hidden, #settingsmenu.hidden { display: none; }
   .title-logo {
     font-size: 84px; font-weight: 900; letter-spacing: 6px; line-height: 1;
     color: #dcdcdc;
@@ -286,6 +286,7 @@
     <button id="btn-torch" class="mcbtn">Torches & Lighting: ON</button>
     <button id="btn-clouds" class="mcbtn">Clouds: ON</button>
     <button id="btn-fps" class="mcbtn">FPS Counter: ON</button>
+    <button id="btn-rd" class="mcbtn">Render Distance: 6</button>
     <button id="btn-achset" class="mcbtn">Achievements: ON</button>
     <button id="btn-set-back" class="mcbtn small">Back</button>
   </div>
@@ -327,6 +328,13 @@
   </div>
 </div>
 
+<div id="chestInv" class="hidden">
+  <div class="invpanel">
+    <div id="chesttitle">CHEST</div>
+    <div id="chestgrid"></div>
+    <div id="chesthint">click to take &middot; <b>ESC</b> close</div>
+  </div>
+</div>
 <canvas id="game" class="game"></canvas>
 <div id="watertint"></div>
 <div id="portaltint"></div>
@@ -361,7 +369,7 @@ window.onerror = (m, s, l) => {
 };
 
 const CH = 16, H = 128, SURF = 64, SEA = 85;
-const RD = 6;
+let RD = 6;
 const REACH = 6;
 const GRAV = 27, JUMP = 8.8, WALK = 4.4, SPRINT = 7.2, FLYSPD = 11, SWIMSPD = 3;
 const DAY_LEN = 480;
@@ -379,8 +387,8 @@ const AIR = 0, GRASS = 1, DIRT = 2, STONE = 3, SAND = 4, LOG = 5,
       HOLYSTONE = 52, SKYROOT_LOG = 53, SKYROOT_LEAVES = 54, AETHER_PORTAL = 55,
       STAIRS_OAK = 40, STAIRS_COBBLE = 44, DOOR = 48, DOOR_OPEN = 49,
       CHERRY_LEAVES = 39,
-      END_STONE = 35, END_PORTAL = 36, DRAGON_EGG = 37, OBSIDIAN = 38,
-      WATER_BUCKET = 101, LAVA_BUCKET = 102,
+      END_STONE = 35, END_PORTAL = 36, DRAGON_EGG = 37, OBSIDIAN = 38, CHEST = 56,
+      WATER_BUCKET = 101, LAVA_BUCKET = 102, BOAT = 103,
       FLINT_AND_STEEL = 100;
 
 const BLOCKS = [
@@ -440,6 +448,7 @@ const BLOCKS = [
   { name: 'Skyroot Log',    top: 50, side: 49, bot: 50 },
   { name: 'Skyroot Leaves', top: 50, side: 50, bot: 50, cutout: true },
   { name: 'Aether Portal',  top: 51, side: 51, bot: 51, portal: true },
+  { name: 'Chest',          top: 52, side: 52, bot: 52 },
 ];
 
 const PLACEABLE = [
@@ -447,13 +456,14 @@ const PLACEABLE = [
   LEAVES, SPRUCE_LEAVES, GLASS, BRICKS, BOOKSHELF, GLOWSTONE, PUMPKIN, WOOL_WHITE,
   WOOL_RED, WOOL_BLUE, WOOL_YELLOW, SNOW, SNOWY_GRASS, COAL_ORE, IRON_ORE, GOLD_ORE,
   DIAMOND_ORE, NETHERRACK, SOUL_SAND, NETHERITE_BLOCK, SANDSTONE, CACTUS, END_STONE, OBSIDIAN, DRAGON_EGG, CHERRY_LEAVES,
-  STAIRS_OAK, STAIRS_COBBLE, DOOR, TORCH, BED, HOLYSTONE, SKYROOT_LOG, SKYROOT_LEAVES, WATER_BUCKET, LAVA_BUCKET,
+  STAIRS_OAK, STAIRS_COBBLE, DOOR, TORCH, BED, HOLYSTONE, SKYROOT_LOG, SKYROOT_LEAVES, CHEST, WATER_BUCKET, LAVA_BUCKET, BOAT,
 ];
 let HOTBAR = [GRASS, STONE, PLANKS, GLASS, BRICKS, GLOWSTONE, LOG, NETHERITE_BLOCK, FLINT_AND_STEEL];
 
 const nameOf = id => id === FLINT_AND_STEEL ? 'Flint & Steel'
   : id === WATER_BUCKET ? 'Water Bucket'
   : id === LAVA_BUCKET ? 'Lava Bucket'
+  : id === BOAT ? 'Boat'
   : (BLOCKS[id] ? BLOCKS[id].name : '?');
 
 const isOpaque = id => { const b = BLOCKS[id]; return !!b && !b.cutout && !b.liquid && !b.portal; };
@@ -878,6 +888,13 @@ atlasCanvas.width = atlasCanvas.height = ATLAS_PX;
       c.fillRect(rnd() * 15 | 0, rnd() * 15 | 0, 1, 1);
     }
   });
+  T(52, () => {
+    speck(160, 110, 55, 8);
+    c.fillStyle = '#5a3d16'; c.fillRect(2, 2, 12, 10);
+    c.fillStyle = '#c9973a'; c.fillRect(3, 3, 10, 1); c.fillRect(3, 7, 10, 1);
+    c.fillStyle = '#3a2a0a'; c.fillRect(7, 5, 2, 3);
+    c.fillStyle = '#8a6b2e'; c.fillRect(2, 12, 12, 2);
+  });
   T(45, () => {
     c.clearRect(0, 0, 16, 16);
     c.fillStyle = '#7a5a30';
@@ -1091,10 +1108,14 @@ let chunks = dims.over.chunks;
 let editsByChunk = dims.over.edits;
 const portals = { over: null, nether: null };
 let portalTime = 0, portalCooldown = 0;
-const settings = { lighting: true, achievements: true, fpsCounter: true, clouds: true };
+const chestData = new Map();
+const boats = [];
+let mountedBoat = null;
+const settings = { lighting: true, achievements: true, fpsCounter: true, clouds: true, renderDist: 6 };
 try {
   const sv = JSON.parse(localStorage.getItem('voxelcraft_settings'));
   if (sv) Object.assign(settings, sv);
+  RD = settings.renderDist || 6;
 } catch (e) { }
 function saveSettings() {
   localStorage.setItem('voxelcraft_settings', JSON.stringify(settings));
@@ -1368,6 +1389,29 @@ function genOverworld(cx, cz) {
       put(wx, gh + 1 + th + 1, wz + 1, leafId, true);
       put(wx, gh + 1 + th + 1, wz - 1, leafId, true);
       for (let ty = 1; ty <= th; ty++) put(wx, gh + ty, wz, LOG, false);
+    }
+  }
+  if (hash2(bx0, bz0, 8888) < 0.018) {
+    const cx = bx0 + 8, cz = bz0 + 8;
+    const h = terrainHeight(cx, cz);
+    if (h >= SEA - 2 && h <= SEA + 1) {
+      const wy = SEA - 4;
+      const hull = [[-4,0,-6],[ -3,0,-7],[ -2,0,-7],[ -1,0,-7],[0,0,-7],[1,0,-7],[2,0,-7],[3,0,-6],[ -4,0,5],[ -3,0,6],[ -2,0,6],[ -1,0,6],[0,0,6],[1,0,6],[2,0,6],[3,0,5]];
+      for (let y = 0; y < 3; y++) for (let x = -4; x <= 4; x++) for (let z = -7; z <= 7; z++) {
+        if (Math.abs(x) <= 2 && Math.abs(z) <= 5 && y === 0) put(cx + x, wy + y, cz + z, PLANKS, false);
+        if ((Math.abs(x) === 3 || Math.abs(z) === 6) && y === 1) put(cx + x, wy + y, cz + z, PLANKS, false);
+        if (Math.abs(x) <= 1 && Math.abs(z) <= 4 && y === 2) { if (Math.random() < 0.7) put(cx + x, wy + y, cz + z, PLANKS, false); }
+      }
+      put(cx, wy + 3, cz, LOG, false);
+      put(cx, wy + 4, cz, LOG, false);
+      const ck = cx + "," + (wy + 1) + "," + cz;
+      if (!chestData.has(ck)) {
+        const loot = [COAL_ORE, IRON_ORE, GOLD_ORE, PLANKS, BRICKS, BOOKSHELF, WOOL_RED];
+        const items = [];
+        for (let i = 0; i < 3 + Math.floor(Math.random() * 3); i++) items.push(loot[Math.floor(Math.random() * loot.length)]);
+        chestData.set(ck, items);
+      }
+      put(cx, wy + 1, cz, CHEST, false);
     }
   }
   const ed = editsByChunk.get(ckey(cx, cz));
@@ -2490,6 +2534,10 @@ const deathEl = document.getElementById('death');
 document.addEventListener('keydown', e => {
   if (e.code === 'F3') { e.preventDefault(); showDebug = !showDebug; dbg.classList.toggle('visible', showDebug); return; }
   if (!started) return;
+  if (curChest) {
+    if (e.code === 'Escape' || e.code === 'KeyE') { e.preventDefault(); closeChest(false); return; }
+    return;
+  }
   if (e.code === 'KeyE') {
     e.preventDefault();
     if (locked && !invOpen) openInv();
@@ -2551,11 +2599,25 @@ function doAction(btn) {
     return;
   }
   if (btn === 0) {
+    const bh = raycastBoat(4);
+    if (bh && (!hit || bh.t < hit.t)) {
+      const idx = boats.indexOf(bh.boat);
+      if (idx !== -1) { scene.remove(bh.boat.mesh); boats.splice(idx, 1); toast('Boat broken'); }
+      return;
+    }
     const mh = raycastMob(4);
     if (mh && mh.t < hit.t) { hitMob(mh.mob); return; }
     blocksMined++;
     if (blocksMined === 100) unlock('mine100');
     if (hit.id === LOG) unlock('wood');
+    if (hit.id === CHEST) {
+      const ck = hit.bx + "," + hit.by + "," + hit.bz;
+      chestData.delete(ck);
+      setBlock(hit.bx, hit.by, hit.bz, AIR, true);
+      digSound(PLANKS);
+      spawnBurst(hit.bx, hit.by, hit.bz, new THREE.Color(0.6, 0.42, 0.2));
+      return;
+    }
     if (isDoorFamily(hit.id)) {
       const cells = [[hit.bx, hit.by, hit.bz]];
       const up = getBlock(hit.bx, hit.by + 1, hit.bz);
@@ -2574,14 +2636,24 @@ function doAction(btn) {
     digSound(hit.id);
     spawnBurst(hit.bx, hit.by, hit.bz, BLOCK_AVG[hit.id] || new THREE.Color(0.5, 0.5, 0.5));
   } else if (btn === 2) {
+    const bh2 = raycastBoat(4);
+    if (bh2 && (!hit || bh2.t < hit.t)) { mountedBoat = bh2.boat; return; }
     const px2 = hit.bx + hit.nx, py2 = hit.by + hit.ny, pz2 = hit.bz + hit.nz;
     const cur = getBlock(px2, py2, pz2);
+    if (hit.id === CHEST) { openChest(hit.bx, hit.by, hit.bz); return; }
     if (hit.id === DOOR || hit.id === DOOR_OPEN) {
       toggleDoor(hit.bx, hit.by, hit.bz);
       return;
     }
     if (hit.id === BED) {
       sleepInBed(hit.bx, hit.by, hit.bz);
+      return;
+    }
+    if (HOTBAR[selSlot] === BOAT) {
+      if (cur === AIR && getBlock(px2, py2 - 1, pz2) === WATER) {
+        createBoat(px2 + 0.5, py2 + 0.5, pz2 + 0.5);
+        toast('Boat placed');
+      }
       return;
     }
     if (HOTBAR[selSlot] === FLINT_AND_STEEL) {
@@ -2644,6 +2716,119 @@ function toggleDoor(bx, by, bz) {
 
 function isDoorFamily(id) {
   return id === DOOR || id === DOOR_OPEN;
+}
+let curChest = null;
+function openChest(bx, by, bz) {
+  curChest = bx + "," + by + "," + bz;
+  if (!chestData.has(curChest)) chestData.set(curChest, []);
+  const grid = document.getElementById('chestgrid');
+  grid.innerHTML = '';
+  const items = chestData.get(curChest);
+  for (let i = 0; i < 9; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'slot';
+    if (items[i] != null) {
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 48;
+      drawBlockIcon(cv, items[i]);
+      slot.appendChild(cv);
+      slot.onclick = () => {
+        const id = items[i];
+        items.splice(i, 1);
+        chestData.set(curChest, items);
+        HOTBAR[selSlot] = id; buildHotbar();
+        openChest(bx, by, bz);
+        if (items.length === 0) chestData.delete(curChest);
+      };
+    } else {
+      slot.style.opacity = '0.3';
+    }
+    grid.appendChild(slot);
+  }
+  document.getElementById('chestInv').classList.remove('hidden');
+  document.exitPointerLock();
+}
+function closeChest(toTitle) {
+  if (!curChest) return;
+  document.getElementById('chestInv').classList.add('hidden');
+  curChest = null;
+  if (toTitle) return;
+  lockPointer();
+}
+function raycastBoat(maxDist) {
+  const o = camera.getWorldPosition(new THREE.Vector3());
+  const d = camera.getWorldDirection(new THREE.Vector3());
+  let best = null, bestT = maxDist;
+  for (const b of boats) {
+    const mn = { x: b.pos.x - 1.2, y: b.pos.y - 0.3, z: b.pos.z - 0.7 };
+    const mx = { x: b.pos.x + 1.2, y: b.pos.y + 0.6, z: b.pos.z + 0.7 };
+    let t0 = 0, t1 = bestT;
+    for (const a of ['x','y','z']) {
+      const inv = 1 / (Math.abs(d[a]) < 1e-9 ? 1e-9 : d[a]);
+      let ta = (mn[a] - o[a]) * inv, tb = (mx[a] - o[a]) * inv;
+      if (ta > tb) { const tmp = ta; ta = tb; tb = tmp; }
+      t0 = Math.max(t0, ta); t1 = Math.min(t1, tb);
+      if (t0 > t1) break;
+    }
+    if (t0 <= t1 && t0 < bestT) { best = b; bestT = t0; }
+  }
+  return best ? { boat: best, t: bestT } : null;
+}
+function createBoat(x, y, z) {
+  const g = new THREE.Group();
+  const hullMat = new THREE.MeshBasicMaterial({ color: 0x6b4423 });
+  hullMat.userData.base = new THREE.Color(0x6b4423);
+  const hull = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.4, 0.9), hullMat);
+  hull.position.y = 0.15;
+  g.add(hull);
+  const inner = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.05, 0.7), new THREE.MeshBasicMaterial({ color: 0x8a5a2a }));
+  inner.position.y = 0.35;
+  g.add(inner);
+  g.position.set(x, y, z);
+  scene.add(g);
+  const b = { pos: new THREE.Vector3(x, y, z), vel: new THREE.Vector3(), yaw: player.yaw, mesh: g, mats: [hullMat] };
+  boats.push(b);
+  return b;
+}
+function updateBoats(dt) {
+  for (const b of boats) {
+    if (mountedBoat === b) {
+      const fwd = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
+      const turn = (keys.KeyA ? 1 : 0) - (keys.KeyD ? 1 : 0);
+      b.yaw -= turn * dt * 1.8;
+      const spd = fwd * 6;
+      b.vel.x += (Math.sin(b.yaw) * spd - b.vel.x) * Math.min(1, 4 * dt);
+      b.vel.z += (Math.cos(b.yaw) * spd - b.vel.z) * Math.min(1, 4 * dt);
+      b.vel.x *= 0.98; b.vel.z *= 0.98;
+      b.pos.x += b.vel.x * dt;
+      b.pos.z += b.vel.z * dt;
+      const wy = Math.floor(b.pos.y);
+      const below = getBlock(Math.floor(b.pos.x), wy - 1, Math.floor(b.pos.z));
+      const at = getBlock(Math.floor(b.pos.x), wy, Math.floor(b.pos.z));
+      if (below === WATER || at === WATER) b.pos.y = SEA + 0.5;
+      else b.pos.y += -9 * dt;
+      if (b.pos.y < SEA + 0.3 && getBlock(Math.floor(b.pos.x), Math.floor(b.pos.y - 0.5), Math.floor(b.pos.z)) !== WATER) b.pos.y = SEA + 0.5;
+      b.mesh.position.copy(b.pos);
+      b.mesh.rotation.y = b.yaw;
+      player.pos.set(b.pos.x, b.pos.y + 0.9, b.pos.z);
+      player.vel.set(0, 0, 0);
+      if (keys.ShiftLeft || keys.ShiftRight) { mountedBoat = null; player.pos.x += Math.sin(b.yaw) * 1.5; player.pos.z += Math.cos(b.yaw) * 1.5; }
+    } else {
+      if (getBlock(Math.floor(b.pos.x), Math.floor(b.pos.y - 1), Math.floor(b.pos.z)) === WATER) b.pos.y = SEA + 0.5;
+      b.mesh.position.copy(b.pos);
+    }
+  }
+}
+function drawBoatIcon(cv) {
+  const c = cv.getContext('2d');
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.clearRect(0, 0, cv.width, cv.height);
+  c.fillStyle = '#6b4423';
+  c.fillRect(10, 26, 28, 10);
+  c.fillStyle = '#8a5a2a';
+  c.fillRect(12, 28, 24, 4);
+  c.fillStyle = '#5a3410';
+  c.fillRect(10, 26, 28, 2);
 }
 
 function intersectsPlayer(bx, by, bz) {
@@ -2765,6 +2950,8 @@ function buildArrivalPortal(wx, wz) {
 
 function enterDimension(target, dest, silent) {
   for (let i = mobs.length - 1; i >= 0; i--) removeMob(i);
+  for (const b of boats) scene.remove(b.mesh);
+  boats.length = 0; mountedBoat = null;
   bossbarEl.style.display = 'none';
   for (const [, ch] of chunks) disposeChunkMeshes(ch);
   dirtySet.clear();
@@ -3358,6 +3545,7 @@ function doSave() {
   w.respawn = respawnPos ? [respawnPos.x, respawnPos.y, respawnPos.z] : null;
   w.respawnDim = respawnDim;
   w.stats = { mined: blocksMined, placed: blocksPlaced };
+  w.chests = Array.from(chestData.entries());
   persistWorlds();
 }
 function loadSave() {
@@ -3452,6 +3640,17 @@ function drawFlintIcon(cv) {
 function drawBlockIcon(cv, id) {
   if (id === FLINT_AND_STEEL) { drawFlintIcon(cv); return; }
   if (id === WATER_BUCKET || id === LAVA_BUCKET) { drawBucketIcon(cv, id === WATER_BUCKET); return; }
+  if (id === BOAT) { drawBoatIcon(cv); return; }
+  if (id === CHEST) {
+    const c = cv.getContext('2d');
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.clearRect(0, 0, cv.width, cv.height);
+    c.fillStyle = '#b5893a';
+    c.fillRect(12, 18, 24, 18);
+    c.fillStyle = '#5a3d16';
+    c.fillRect(22, 24, 4, 6);
+    return;
+  }
   const s = cv.width;
   const c = cv.getContext('2d');
   c.setTransform(1, 0, 0, 1, 0, 0);
@@ -3613,6 +3812,8 @@ function resetWorld(w) {
   if (w.ach) ach.push(...w.ach);
   blocksMined = w.stats ? w.stats.mined : 0;
   blocksPlaced = w.stats ? w.stats.placed : 0;
+  chestData.clear();
+  if (w.chests) for (const [k, v] of w.chests) chestData.set(k, v);
   if (savedPos) {
     const pcx2 = Math.floor(savedPos[0]) >> 4, pcz2 = Math.floor(savedPos[2]) >> 4;
     for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) ensureChunkData(pcx2 + dx, pcz2 + dz);
@@ -3698,6 +3899,8 @@ function showScreen(el) {
   for (const s of [blocker, worldMenuEl, createWorldEl, settingsEl]) s.classList.add('hidden');
   pauseEl.classList.add('hidden');
   deathEl.classList.add('hidden');
+  document.getElementById('chestInv').classList.add('hidden');
+  curChest = null;
   if (el) el.classList.remove('hidden');
   const hud = el ? 'none' : 'flex';
   document.getElementById('hotbar').style.display = hud;
@@ -3977,6 +4180,7 @@ function syncSettingButtons() {
   document.getElementById('btn-torch').textContent = 'Torches & Lighting: ' + (settings.lighting ? 'ON' : 'OFF');
   document.getElementById('btn-clouds').textContent = 'Clouds: ' + (settings.clouds ? 'ON' : 'OFF');
   document.getElementById('btn-fps').textContent = 'FPS Counter: ' + (settings.fpsCounter ? 'ON' : 'OFF');
+  document.getElementById('btn-rd').textContent = 'Render Distance: ' + settings.renderDist;
   document.getElementById('btn-achset').textContent = 'Achievements: ' + (settings.achievements ? 'ON' : 'OFF');
   document.getElementById('fps').classList.toggle('hidden', !settings.fpsCounter);
   clouds.visible = settings.clouds && curDim !== 'nether' && curDim !== 'end';
@@ -3984,6 +4188,13 @@ function syncSettingButtons() {
 document.getElementById('btn-torch').addEventListener('click', () => setSetting('lighting', !settings.lighting));
 document.getElementById('btn-clouds').addEventListener('click', () => setSetting('clouds', !settings.clouds));
 document.getElementById('btn-fps').addEventListener('click', () => setSetting('fpsCounter', !settings.fpsCounter));
+document.getElementById('btn-rd').addEventListener('click', () => {
+  const opts = [4, 6, 8, 10];
+  const i = opts.indexOf(settings.renderDist);
+  setSetting('renderDist', opts[(i + 1) % opts.length]);
+  RD = settings.renderDist;
+  lastPcx = 1e9;
+});
 document.getElementById('btn-achset').addEventListener('click', () => setSetting('achievements', !settings.achievements));
 document.getElementById('btn-set-back').addEventListener('click', () => {
   showScreen(started ? pauseEl : blocker);
@@ -4046,9 +4257,11 @@ document.addEventListener('pointerlockchange', () => {
   if (locked) {
     pauseEl.classList.add('hidden');
     invEl.classList.add('hidden');
+    document.getElementById('chestInv').classList.add('hidden');
     invOpen = false;
+    curChest = null;
     clearInterval(holdTimer); holdTimer = null;
-  } else if (started && !invOpen && !dead && !cmdOpen) {
+  } else if (started && !invOpen && !curChest && !dead && !cmdOpen) {
     pauseEl.classList.remove('hidden');
     keys.KeyW = keys.KeyA = keys.KeyS = keys.KeyD = keys.Space = keys.ShiftLeft = false;
     doSave();
@@ -4131,8 +4344,9 @@ function loop(now) {
   frameCount++;
 
   if (started) {
-    streamChunks(player.pos.x, player.pos.z, 6);
-    updatePlayer(dt);
+    streamChunks(mountedBoat ? mountedBoat.pos.x : player.pos.x, mountedBoat ? mountedBoat.pos.z : player.pos.z, 6);
+    if (!mountedBoat) updatePlayer(dt);
+    updateBoats(dt);
     updateMobs(dt);
     const hit = raycast();
     if (hit) {
