@@ -470,7 +470,7 @@ const PLACEABLE = [
   DIAMOND_ORE, NETHERRACK, SOUL_SAND, NETHERITE_BLOCK, SANDSTONE, CACTUS, END_STONE, OBSIDIAN, DRAGON_EGG, CHERRY_LEAVES,
   DOOR, TORCH, BED, HOLYSTONE, SKYROOT_LOG, SKYROOT_LEAVES, CHEST, WATER_BUCKET, LAVA_BUCKET, BOAT, TNT, ACACIA_LOG, ACACIA_LEAVES, VINE,
 ];
-let HOTBAR = [GRASS, STONE, PLANKS, GLASS, BRICKS, GLOWSTONE, LOG, NETHERITE_BLOCK, FLINT_AND_STEEL];
+let HOTBAR = [GRASS, STONE, PLANKS, GLASS, BRICKS, GLOWSTONE, LOG, BOAT, FLINT_AND_STEEL];
 
 const nameOf = id => id === FLINT_AND_STEEL ? 'Flint & Steel'
   : id === WATER_BUCKET ? 'Water Bucket'
@@ -2720,8 +2720,10 @@ function doAction(btn) {
       return;
     }
     if (HOTBAR[selSlot] === BOAT) {
-      if (cur === AIR && getBlock(px2, py2 - 1, pz2) === WATER) {
+      if (cur === WATER) {
         createBoat(px2 + 0.5, py2 + 0.5, pz2 + 0.5);
+      } else if (cur === AIR && getBlock(px2, py2 - 1, pz2) === WATER) {
+        createBoat(px2 + 0.5, py2 - 0.5, pz2 + 0.5);
         toast('Boat placed');
       }
       return;
