@@ -2882,7 +2882,8 @@ function updateBoats(dt) {
       player.pos.set(b.pos.x, b.pos.y + 0.65, b.pos.z);
       player.vel.set(0, 0, 0);
       player.onGround = true; player.swimming = false; player.wasSwim = false;
-      camera.position.copy(player.pos).add(new THREE.Vector3(0, player.EYE, 0));
+      camera.position.copy(player.pos).add(new THREE.Vector3(0, player.EYE + player.bobOff, 0));
+      camera.rotation.set(player.pitch, player.yaw, 0);
       if (keys.ShiftLeft || keys.ShiftRight) { mountedBoat = null; player.pos.x += Math.sin(b.yaw) * 1.5; player.pos.z += Math.cos(b.yaw) * 1.5; player.vel.set(0,0,0); toast('Left boat'); }
     } else {
       if (getBlock(Math.floor(b.pos.x), Math.floor(b.pos.y - 1), Math.floor(b.pos.z)) === WATER) b.pos.y = SEA + 0.5;
