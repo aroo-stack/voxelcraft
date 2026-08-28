@@ -156,10 +156,10 @@
   #itemname.show { opacity: 1; transition: opacity .05s; }
 
   #coord {
-    position: absolute; bottom: 56px; left: 50%; transform: translateX(-50%);
-    color: #aaa; font-size: 13px; letter-spacing: 1px;
-    background: rgba(0,0,0,.5); padding: 4px 8px;
-    border-radius: 6px; z-index: 5; pointer-events: none;
+    position: absolute; top: 12px; left: 12px;
+    color: #eaf5df; font-size: 13px; letter-spacing: 1px; font-family: monospace;
+    background: rgba(0,0,0,.55); padding: 5px 8px;
+    border-radius: 6px; z-index: 5; pointer-events: none; border: 1px solid rgba(255,255,255,.08);
   }
 
   #hearts {
@@ -353,7 +353,7 @@
 <div id="hearts"></div>
 <div id="dmgvignette"></div>
 <div id="hotbar"></div>
-<div id="coord">X: 0 Z: 0</div>
+<div id="coord">X: 0 Y: 0 Z: 0</div>
 <div id="itemname"></div>
 <div id="achtoast"></div>
 <div id="debug"></div>
@@ -458,7 +458,7 @@ const BLOCKS = [
   { name: 'Aether Portal',  top: 51, side: 51, bot: 51, portal: true },
   { name: 'Chest',          top: 52, side: 52, bot: 52 },
 ];
-BLOCKS[TNT] = { name: 'TNT', top: 24, side: 24, bot: 24 };
+BLOCKS[TNT] = { name: 'TNT', top: 53, side: 53, bot: 53 };
 
 const PLACEABLE = [
   GRASS, DIRT, STONE, COBBLE, SAND, GRAVEL, LOG, PLANKS,
@@ -904,6 +904,14 @@ atlasCanvas.width = atlasCanvas.height = ATLAS_PX;
     c.fillStyle = '#c9973a'; c.fillRect(3, 3, 10, 1); c.fillRect(3, 7, 10, 1);
     c.fillStyle = '#3a2a0a'; c.fillRect(7, 5, 2, 3);
     c.fillStyle = '#8a6b2e'; c.fillRect(2, 12, 12, 2);
+  });
+  T(53, () => {
+    c.fillStyle = '#c0392b'; c.fillRect(0, 0, 16, 16);
+    c.fillStyle = '#ffffff'; c.fillRect(0, 6, 16, 4);
+    c.fillStyle = '#000000';
+    c.font = 'bold 7px monospace'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('TNT', 8, 8);
+    c.fillStyle = 'rgba(0,0,0,.2)'; c.fillRect(0, 0, 16, 1); c.fillRect(0, 15, 16, 1);
   });
   T(45, () => {
     c.clearRect(0, 0, 16, 16);
@@ -3538,8 +3546,17 @@ function explodeTNT(x, y, z) {
       m.hp -= 5;
     }
   }
-  // Remove TNT block
-  setBlock(x, y, z, AIR, true);
+  // Blast blocks in radius 4
+  for (let dx = -4; dx <= 4; dx++) for (let dy = -4; dy <= 4; dy++) for (let dz = -4; dz <= 4; dz++) {
+    const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+    if (dist > 4.5) continue;
+    const bx = x + dx, by = y + dy, bz = z + dz;
+    const bid = getBlock(bx, by, bz);
+    if (bid === AIR || bid === BEDROCK || bid === WATER || bid === LAVA || bid === PORTAL || bid === END_PORTAL || bid === AETHER_PORTAL) continue;
+    if (Math.random() < dist * 0.12) continue;
+    setBlock(bx, by, bz, AIR, true);
+    if (Math.random() < 0.3) spawnBurst(bx+0.5, by+0.5, bz+0.5, BLOCK_AVG[bid] || new THREE.Color(0.6,0.5,0.4));
+  }
   digSound(TNT);
 }
 function fizzleSound() { burst(420, 0.18, 1, 0.15); }
@@ -4396,7 +4413,7 @@ function loop(now) {
     }
     const hit = raycast();
     // Update coordinate display
-    document.getElementById('coord').textContent = 'X: ' + Math.floor(player.pos.x) + ' Z: ' + Math.floor(player.pos.z);
+    document.getElementById('coord').textContent = 'X: ' + Math.floor(player.pos.x) + ' Y: ' + Math.floor(player.pos.y) + ' Z: ' + Math.floor(player.pos.z);
     if (hit) {
       highlight.visible = true;
       highlight.position.set(hit.bx + 0.5, hit.by + 0.5, hit.bz + 0.5);
