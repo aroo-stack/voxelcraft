@@ -1464,7 +1464,6 @@ function genOverworld(cx, cz) {
     const h = terrainHeight(cx, cz);
     if (h >= SEA - 2 && h <= SEA + 1) {
       const wy = SEA - 4;
-      const hull = [[-4,0,-6],[ -3,0,-7],[ -2,0,-7],[ -1,0,-7],[0,0,-7],[1,0,-7],[2,0,-7],[3,0,-6],[ -4,0,5],[ -3,0,6],[ -2,0,6],[ -1,0,6],[0,0,6],[1,0,6],[2,0,6],[3,0,5]];
       for (let y = 0; y < 3; y++) for (let x = -4; x <= 4; x++) for (let z = -7; z <= 7; z++) {
         if (Math.abs(x) <= 2 && Math.abs(z) <= 5 && y === 0) put(cx + x, wy + y, cz + z, PLANKS, false);
         if ((Math.abs(x) === 3 || Math.abs(z) === 6) && y === 1) put(cx + x, wy + y, cz + z, PLANKS, false);
@@ -4270,11 +4269,9 @@ function lockPointer() {
   } catch (e) { }
 }
 
-let settingsReturn = null;
 document.getElementById('btn-single').addEventListener('click', () => { renderWorldList(); showScreen(worldMenuEl); });
 document.getElementById('btn-options').addEventListener('click', () => openSettings());
 function openSettings() {
-  settingsReturn = started ? pauseEl : blocker;
   syncSettingButtons();
   showScreen(settingsEl);
 }
@@ -4424,7 +4421,7 @@ window.VC = {
     return c;
   },
   worldPos: () => [+player.pos.x.toFixed(1), +player.pos.y.toFixed(1), +player.pos.z.toFixed(1)],
-  queueState: () => ({ len: genQueue.length, total: genTotal, last: [lastPcx, lastPcz], head: genQueue.length ? genQueue[0].slice(0, 2) : null }),
+  queueState: () => ({ len: genQueue.length, total: genQueue.length, last: [lastPcx, lastPcz], head: genQueue.length ? genQueue[0].slice(0, 2) : null }),
   chunkInfo: (cx, cz) => {
     const ch = chunks.get(ckey(cx, cz));
     if (!ch || !ch.meshes) return null;
@@ -4440,7 +4437,7 @@ function loop(now) {
   requestAnimationFrame(loop);
   const dt = Math.min((now - lastT) / 1000, 0.05);
   lastT = now;
-  if (started || !started) {
+  {
     fpsEma += (1 / Math.max(dt, 1e-4) - fpsEma) * 0.08;
     if (settings.fpsCounter) {
       const fpsEl = document.getElementById('fps');
