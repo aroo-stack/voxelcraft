@@ -458,6 +458,7 @@ const BLOCKS = [
   { name: 'Aether Portal',  top: 51, side: 51, bot: 51, portal: true },
   { name: 'Chest',          top: 52, side: 52, bot: 52 },
 ];
+BLOCKS[TNT] = { name: 'TNT', top: 24, side: 24, bot: 24 };
 
 const PLACEABLE = [
   GRASS, DIRT, STONE, COBBLE, SAND, GRAVEL, LOG, PLANKS,
@@ -1541,6 +1542,7 @@ function buildChunkMesh(ch) {
           continue;
         }
         const info = BLOCKS[id];
+        if (!info) continue;
         const isWaterBlk = id === WATER;
         const isLavaBlk = id === LAVA;
         const isPortalBlk = id === PORTAL;
