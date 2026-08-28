@@ -567,7 +567,7 @@ function biomeAt(x, z) {
   if (t > 0.34 && h < -0.05) return 'desert';
   if (t < -0.05) return 'taiga';
   if (t > 0.02 && h > 0.3) return 'cherry';
-  if (t > 0.28 && h > -0.05 && h < 0.18) return 'savanna';
+  if (t > 0.24 && h > -0.08 && h < 0.22) return 'savanna';
   if (h > 0.12) return 'forest';
   return 'plains';
 }
@@ -4170,9 +4170,9 @@ function runCommand(raw) {
   const args = parts.slice(1).map(a => a.toLowerCase());
   if (!cmd) return;
   if (cmd === 'tpbiome' || cmd === 'biome') {
-    const alias = { snow: 'tundra', snowy: 'tundra', tundra: 'tundra', snowyforest: 'snowy_forest', snowy_forest: 'snowy_forest', forest: 'forest', plains: 'plains', desert: 'desert', taiga: 'taiga', cherry: 'cherry', cherrygrove: 'cherry', mountains: 'mountains', mountain: 'mountains' };
+    const alias = { snow: 'tundra', snowy: 'tundra', tundra: 'tundra', snowyforest: 'snowy_forest', snowy_forest: 'snowy_forest', forest: 'forest', plains: 'plains', desert: 'desert', taiga: 'taiga', cherry: 'cherry', cherrygrove: 'cherry', mountains: 'mountains', mountain: 'mountains', savanna: 'savanna', savana: 'savanna', acacia: 'savanna' };
     const b = alias[(args[0] || '').replace(/[^a-z_]/g, '')];
-    if (!b) { toast('Biomes: plains, forest, desert, tundra, snowy_forest'); return; }
+    if (!b) { toast('Biomes: plains, forest, desert, tundra, snowy_forest, savanna'); return; }
     if (curDim !== 'over') enterDimension('over', portals.over ? portals.over.clone() : null, true);
     const px = player.pos.x, pz = player.pos.z;
     for (let r = 48; r <= 3000; r += 24) {
