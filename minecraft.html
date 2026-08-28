@@ -2870,24 +2870,19 @@ function updateBoats(dt) {
     if (mountedBoat === b) {
       const fwd = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
       const turn = (keys.KeyA ? 1 : 0) - (keys.KeyD ? 1 : 0);
-      b.yaw -= turn * dt * 1.8;
-      const spd = fwd * 6;
-      b.vel.x += (Math.sin(b.yaw) * spd - b.vel.x) * Math.min(1, 4 * dt);
-      b.vel.z += (Math.cos(b.yaw) * spd - b.vel.z) * Math.min(1, 4 * dt);
-      b.vel.x *= 0.98; b.vel.z *= 0.98;
+      b.yaw -= turn * dt * 2.2;
+      const spd = fwd * 7;
+      b.vel.x = Math.sin(b.yaw) * spd;
+      b.vel.z = Math.cos(b.yaw) * spd;
       b.pos.x += b.vel.x * dt;
       b.pos.z += b.vel.z * dt;
-      const wy = Math.floor(b.pos.y);
-      const below = getBlock(Math.floor(b.pos.x), wy - 1, Math.floor(b.pos.z));
-      const at = getBlock(Math.floor(b.pos.x), wy, Math.floor(b.pos.z));
-      if (below === WATER || at === WATER) b.pos.y = SEA + 0.5;
-      else b.pos.y += -9 * dt;
-      if (b.pos.y < SEA + 0.3 && getBlock(Math.floor(b.pos.x), Math.floor(b.pos.y - 0.5), Math.floor(b.pos.z)) !== WATER) b.pos.y = SEA + 0.5;
+      b.pos.y = SEA + 0.5;
       b.mesh.position.copy(b.pos);
       b.mesh.rotation.y = b.yaw;
-      player.pos.set(b.pos.x, b.pos.y + 0.9, b.pos.z);
-      player.vel.set(0, 0, 0);
-      if (keys.ShiftLeft || keys.ShiftRight) { mountedBoat = null; player.pos.x += Math.sin(b.yaw) * 1.5; player.pos.z += Math.cos(b.yaw) * 1.5; }
+      player.pos.set(b.pos.x, b.pos.y + 0.75, b.pos.z);
+      player.vel.set(b.vel.x, 0, b.vel.z);
+      player.yaw = b.yaw;
+      if (keys.ShiftLeft || keys.ShiftRight) { mountedBoat = null; player.pos.x += Math.sin(b.yaw) * 1.5; player.pos.z += Math.cos(b.yaw) * 1.5; player.vel.set(0,0,0); }
     } else {
       if (getBlock(Math.floor(b.pos.x), Math.floor(b.pos.y - 1), Math.floor(b.pos.z)) === WATER) b.pos.y = SEA + 0.5;
       b.mesh.position.copy(b.pos);
