@@ -3532,28 +3532,30 @@ function sleepInBed(bx, by, bz) {
 function igniteSound() { burst(1800, 0.12, 2, 0.3); tone(520, 0.35, 'sawtooth', 0.08); burst(700, 0.4, 0.6, 0.16); }
 function explodeTNT(x, y, z) {
   // Create explosion effect
-  spawnBurst(x + 0.5, y + 0.5, z + 0.5, new THREE.Color(1, 0.5, 0));
-  // Damage nearby mobs
+  spawnBurst(x + 0.5, y + 0.5, z + 0.5, new THREE.Color(1, 0.45, 0));
+  spawnBurst(x + 0.5, y + 0.8, z + 0.5, new THREE.Color(0.2, 0.2, 0.2));
+  burst(120, 0.5, 0.6, 0.5); burst(60, 0.8, 0.4, 0.6);
+  // Damage nearby mobs radius 7
   for (const m of mobs) {
     const dx = Math.abs(m.pos.x - x - 0.5);
     const dy = Math.abs(m.pos.y - y - 0.5);
     const dz = Math.abs(m.pos.z - z - 0.5);
     const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-    if (dist < 5) {
-      m.vel.x = (Math.random() - 0.5) * 2;
-      m.vel.z = (Math.random() - 0.5) * 2;
-      m.vel.y = Math.random() * 2;
-      m.hp -= 5;
+    if (dist < 7) {
+      m.vel.x = (Math.random() - 0.5) * 3;
+      m.vel.z = (Math.random() - 0.5) * 3;
+      m.vel.y = Math.random() * 2.5 + 1;
+      m.hp -= 8 - dist*0.6;
     }
   }
-  // Blast blocks in radius 4
-  for (let dx = -4; dx <= 4; dx++) for (let dy = -4; dy <= 4; dy++) for (let dz = -4; dz <= 4; dz++) {
+  // Blast blocks in radius 7
+  for (let dx = -7; dx <= 7; dx++) for (let dy = -7; dy <= 7; dy++) for (let dz = -7; dz <= 7; dz++) {
     const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
-    if (dist > 4.5) continue;
+    if (dist > 6.5) continue;
     const bx = x + dx, by = y + dy, bz = z + dz;
     const bid = getBlock(bx, by, bz);
     if (bid === AIR || bid === BEDROCK || bid === WATER || bid === LAVA || bid === PORTAL || bid === END_PORTAL || bid === AETHER_PORTAL) continue;
-    if (Math.random() < dist * 0.12) continue;
+    if (Math.random() < dist * 0.08) continue;
     setBlock(bx, by, bz, AIR, true);
     if (Math.random() < 0.3) spawnBurst(bx+0.5, by+0.5, bz+0.5, BLOCK_AVG[bid] || new THREE.Color(0.6,0.5,0.4));
   }
@@ -4402,10 +4404,14 @@ function loop(now) {
     if (!mountedBoat) updatePlayer(dt);
     updateBoats(dt);
     updateMobs(dt);
-    // Update TNT fuses
+    // Update TNT fuses + spark warning
     for (let i = tnts.length - 1; i >= 0; i--) {
       const t = tnts[i];
       t.fuse -= dt * 20;
+      if (t.fuse > 0 && Math.random() < 0.45) {
+        spawnBurst(t.x+0.5+ (Math.random()-0.5)*0.3, t.y+1.1, t.z+0.5+(Math.random()-0.5)*0.3, new THREE.Color(1,0.92,0.2));
+        if (Math.random() < 0.15) burst(900+Math.random()*400, 0.08, 1.5, 0.12);
+      }
       if (t.fuse <= 0) {
         explodeTNT(t.x, t.y, t.z);
         tnts.splice(i, 1);
