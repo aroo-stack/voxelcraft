@@ -1413,7 +1413,7 @@ function genOverworld(cx, cz) {
         // diagonal branch
         if (hash2(wx,wz,999)<0.5) { put(wx+1, gh+th, wz, ACACIA_LOG, false); put(wx+1, gh+th+1, wz, ACACIA_LEAVES, true); put(wx+2, gh+th, wz, ACACIA_LEAVES, true); }
         // vines hanging 2-4 down from canopy edges
-        for (let i=0;i<6;i++){ const ox=(hash2(wx+i*13,wz,777+i*7)%5)-2, oz=(hash2(wx,wz+i*11,778+i*7)%5)-2; if (hash2(wx+ox,wz+oz,779+i)<0.45) continue; const lx=wx+ox,lz=wz+oz,ly=gh+th; if(getBlock(lx,ly,lz)!==ACACIA_LEAVES) continue; const len=2+Math.floor(hash2(lx,lz,780)*3); for(let d=1;d<=len;d++) put(lx, ly-d, lz, VINE, true); }
+        for (let i=0;i<8;i++){ const ox=Math.floor(hash2(wx+i*13,wz,777+i*7)*5)-2, oz=Math.floor(hash2(wx,wz+i*11,778+i*7)*5)-2; const lx=wx+ox,lz=wz+oz,ly=gh+1+th; if(getBlock(lx,ly,lz)!==ACACIA_LEAVES) continue; if (hash2(lx,lz,779+i)<0.35) continue; const len=2+Math.floor(hash2(lx,lz,780+i)*3); for(let d=1;d<=len;d++){ const vy=ly-d; if(getBlock(lx,vy,lz)!==AIR) break; put(lx, vy, lz, VINE, true); } }
         continue;
       }
       const leafId = (lb === 'snowy_forest' || lb === 'taiga' || lb === 'mountains') ? SPRUCE_LEAVES
@@ -1432,6 +1432,13 @@ function genOverworld(cx, cz) {
       put(wx, gh + 1 + th + 1, wz + 1, leafId, true);
       put(wx, gh + 1 + th + 1, wz - 1, leafId, true);
       for (let ty = 1; ty <= th; ty++) put(wx, gh + ty, wz, LOG, false);
+      if (lb === 'snowy_forest' || lb === 'tundra' || lb === 'taiga' || lb === 'mountains') {
+        for (let ox=-2;ox<=2;ox++) for(let oz=-2;oz<=2;oz++){
+          const lx=wx+ox,lz=wz+oz,ly=gh+1+th+1;
+          if(getBlock(lx,ly,lz)===leafId && getBlock(lx,ly+1,lz)===AIR && hash2(lx,lz,1234+ox*7)<0.6) put(lx,ly+1,lz,SNOW,true);
+          if(getBlock(lx,ly-1,lz)===leafId && getBlock(lx,ly,lz)===AIR && hash2(lx+5,lz+5,1235)<0.4) put(lx,ly,lz,SNOW,true);
+        }
+      }
     }
   }
   if (hash2(bx0, bz0, 8888) < 0.018) {
