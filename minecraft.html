@@ -1441,6 +1441,24 @@ function genOverworld(cx, cz) {
       }
     }
   }
+  // inland lakes in middle of biomes
+  if (hash2(bx0, bz0, 7777) < 0.07) {
+    const lx = bx0 + 4 + Math.floor(hash2(bx0,bz0,7777)*8), lz = bz0 + 4 + Math.floor(hash2(bx0+1,bz0+1,7778)*8);
+    const lh = terrainHeight(lx, lz);
+    if (lh > SEA + 4 && lh < SURF + 28 && biomeAt(lx,lz) !== 'desert' && biomeAt(lx,lz) !== 'mountains') {
+      const r = 3 + Math.floor(hash2(lx,lz,7779)*4);
+      for (let x=-r;x<=r;x++) for(let z=-r;z<=r;z++){
+        const d=x*x+z*z;
+        if(d > r*r+1) continue;
+        const wx=lx+x, wz=lz+z;
+        const sh=lh-1;
+        if(getBlock(wx,sh,wz)!==GRASS && getBlock(wx,sh,wz)!==DIRT && getBlock(wx,sh,wz)!==SAND) continue;
+        setBlock(wx,sh,wz,AIR,true); setBlock(wx,sh-1,wz,WATER,true);
+        for(let y=sh+1;y<=sh+2;y++) if(getBlock(wx,y,wz)!==AIR) setBlock(wx,y,wz,AIR,true);
+        if(d>r*r-2 && hash2(wx,wz,7780)<0.6) setBlock(wx,sh,wz,SAND,true);
+      }
+    }
+  }
   if (hash2(bx0, bz0, 8888) < 0.018) {
     const cx = bx0 + 8, cz = bz0 + 8;
     const h = terrainHeight(cx, cz);
