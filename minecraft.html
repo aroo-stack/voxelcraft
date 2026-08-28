@@ -155,6 +155,13 @@
   }
   #itemname.show { opacity: 1; transition: opacity .05s; }
 
+  #coord {
+    position: absolute; bottom: 56px; left: 50%; transform: translateX(-50%);
+    color: #aaa; font-size: 13px; letter-spacing: 1px;
+    background: rgba(0,0,0,.5); padding: 4px 8px;
+    border-radius: 6px; z-index: 5; pointer-events: none;
+  }
+
   #hearts {
     position: absolute; bottom: 78px; left: 50%; transform: translateX(-50%);
     display: flex; gap: 2px; z-index: 5; pointer-events: none;
@@ -346,6 +353,7 @@
 <div id="hearts"></div>
 <div id="dmgvignette"></div>
 <div id="hotbar"></div>
+<div id="coord">X: 0 Z: 0</div>
 <div id="itemname"></div>
 <div id="achtoast"></div>
 <div id="debug"></div>
@@ -388,7 +396,7 @@ const AIR = 0, GRASS = 1, DIRT = 2, STONE = 3, SAND = 4, LOG = 5,
       STAIRS_OAK = 40, STAIRS_COBBLE = 44, DOOR = 48, DOOR_OPEN = 49,
       CHERRY_LEAVES = 39,
       END_STONE = 35, END_PORTAL = 36, DRAGON_EGG = 37, OBSIDIAN = 38, CHEST = 56,
-      WATER_BUCKET = 101, LAVA_BUCKET = 102, BOAT = 103,
+      WATER_BUCKET = 101, LAVA_BUCKET = 102, BOAT = 103, TNT = 104,
       FLINT_AND_STEEL = 100;
 
 const BLOCKS = [
@@ -456,14 +464,15 @@ const PLACEABLE = [
   LEAVES, SPRUCE_LEAVES, GLASS, BRICKS, BOOKSHELF, GLOWSTONE, PUMPKIN, WOOL_WHITE,
   WOOL_RED, WOOL_BLUE, WOOL_YELLOW, SNOW, SNOWY_GRASS, COAL_ORE, IRON_ORE, GOLD_ORE,
   DIAMOND_ORE, NETHERRACK, SOUL_SAND, NETHERITE_BLOCK, SANDSTONE, CACTUS, END_STONE, OBSIDIAN, DRAGON_EGG, CHERRY_LEAVES,
-  STAIRS_OAK, STAIRS_COBBLE, DOOR, TORCH, BED, HOLYSTONE, SKYROOT_LOG, SKYROOT_LEAVES, CHEST, WATER_BUCKET, LAVA_BUCKET, BOAT,
+  STAIRS_OAK, STAIRS_COBBLE, DOOR, TORCH, BED, HOLYSTONE, SKYROOT_LOG, SKYROOT_LEAVES, CHEST, WATER_BUCKET, LAVA_BUCKET, BOAT, TNT,
 ];
-let HOTBAR = [GRASS, STONE, PLANKS, GLASS, BRICKS, GLOWSTONE, LOG, NETHERITE_BLOCK, FLINT_AND_STEEL];
+let HOTBAR = [GRASS, STONE, PLANKS, GLASS, BRICKS, GLOWSTONE, LOG, NETHERITE_BLOCK, FLINT_AND_STEEL, TNT];
 
 const nameOf = id => id === FLINT_AND_STEEL ? 'Flint & Steel'
   : id === WATER_BUCKET ? 'Water Bucket'
   : id === LAVA_BUCKET ? 'Lava Bucket'
   : id === BOAT ? 'Boat'
+  : id === TNT ? 'TNT'
   : (BLOCKS[id] ? BLOCKS[id].name : '?');
 
 const isOpaque = id => { const b = BLOCKS[id]; return !!b && !b.cutout && !b.liquid && !b.portal; };
@@ -1924,6 +1933,7 @@ const MOB_TYPES = {
   creeper: { W: 0.3, HGT: 1.5, hp: 8, speed: 1.0, chaseSpeed: 2.3, hostile: true, dmg: 0 },
 };
 const mobs = [];
+let tnts = [];
 let daylightVal = 1;
 let hp = 20, dead = false, lastDamageT = 0, regenT = 0, lavaT = 0;
 let gameMode = 'survival';
@@ -2658,7 +2668,15 @@ function doAction(btn) {
     }
     if (HOTBAR[selSlot] === FLINT_AND_STEEL) {
       if (tryLightPortal(px2, py2, pz2)) toast('Portal ignited!');
-      else fizzleSound();
+      else if (hit.id === TNT) {
+        // Start TNT fuse
+        const ch = chunks.get(ckey(hit.bx, hit.bz));
+        if (ch) {
+          if (!ch.userData) ch.userData = {};
+          ch.userData.fuse = 100; // 4 second fuse
+          toast('TNT ignited!');
+        }
+      } else fizzleSound();
       return;
     }
     if (HOTBAR[selSlot] === WATER_BUCKET || HOTBAR[selSlot] === LAVA_BUCKET) {
@@ -3506,6 +3524,26 @@ function sleepInBed(bx, by, bz) {
   doSave();
 }
 function igniteSound() { burst(1800, 0.12, 2, 0.3); tone(520, 0.35, 'sawtooth', 0.08); burst(700, 0.4, 0.6, 0.16); }
+function explodeTNT(x, y, z) {
+  // Create explosion effect
+  spawnBurst(x + 0.5, y + 0.5, z + 0.5, new THREE.Color(1, 0.5, 0));
+  // Damage nearby mobs
+  for (const m of mobs) {
+    const dx = Math.abs(m.pos.x - x - 0.5);
+    const dy = Math.abs(m.pos.y - y - 0.5);
+    const dz = Math.abs(m.pos.z - z - 0.5);
+    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if (dist < 5) {
+      m.vel.x = (Math.random() - 0.5) * 2;
+      m.vel.z = (Math.random() - 0.5) * 2;
+      m.vel.y = Math.random() * 2;
+      m.hp -= 5;
+    }
+  }
+  // Remove TNT block
+  setBlock(x, y, z, AIR, true);
+  digSound(TNT);
+}
 function fizzleSound() { burst(420, 0.18, 1, 0.15); }
 function portalWoosh() { burst(300, 0.5, 0.4, 0.3); tone(140, 0.6, 'sine', 0.15); }
 function roarSound() { tone(70, 0.6, 'sawtooth', 0.12); tone(52, 0.85, 'sawtooth', 0.1); }
@@ -3651,12 +3689,13 @@ function drawBlockIcon(cv, id) {
     c.fillRect(22, 24, 4, 6);
     return;
   }
+  const info = BLOCKS[id];
+  if (!info) return; // <-- ADD THIS GUARD
   const s = cv.width;
   const c = cv.getContext('2d');
   c.setTransform(1, 0, 0, 1, 0, 0);
   c.clearRect(0, 0, s, s);
   c.imageSmoothingEnabled = false;
-  const info = BLOCKS[id];
   const src = t => [(t % ATLAS_N) * TILE_PX, Math.floor(t / ATLAS_N) * TILE_PX];
   const hw = s * 0.46, hh = hw * 0.5;
   const cx = s / 2, topY = s * 0.04, hgt = s * 0.47;
@@ -4348,7 +4387,19 @@ function loop(now) {
     if (!mountedBoat) updatePlayer(dt);
     updateBoats(dt);
     updateMobs(dt);
+    // Update TNT fuses
+    for (const [, ch] of chunks) {
+      if (ch.userData && ch.userData.fuse != null) {
+        ch.userData.fuse -= dt * 20; // 20 ticks per second
+        if (ch.userData.fuse <= 0) {
+          explodeTNT(ch.userData.x || ch.x + 0.5, ch.userData.y || ch.y + 0.5, ch.userData.z || ch.z + 0.5);
+          ch.userData.fuse = null;
+        }
+      }
+    }
     const hit = raycast();
+    // Update coordinate display
+    document.getElementById('coord').textContent = 'X: ' + Math.floor(player.pos.x) + ' Z: ' + Math.floor(player.pos.z);
     if (hit) {
       highlight.visible = true;
       highlight.position.set(hit.bx + 0.5, hit.by + 0.5, hit.bz + 0.5);
