@@ -2707,7 +2707,7 @@ function doAction(btn) {
     spawnBurst(hit.bx, hit.by, hit.bz, BLOCK_AVG[hit.id] || new THREE.Color(0.5, 0.5, 0.5));
   } else if (btn === 2) {
     const bh2 = raycastBoat(4);
-    if (bh2 && (!hit || bh2.t < hit.t)) { mountedBoat = bh2.boat; return; }
+    if (bh2 && (!hit || bh2.t < hit.t)) { mountedBoat = bh2.boat; toast('Boarded boat - WASD to paddle, Shift to leave'); return; }
     const px2 = hit.bx + hit.nx, py2 = hit.by + hit.ny, pz2 = hit.bz + hit.nz;
     const cur = getBlock(px2, py2, pz2);
     if (hit.id === CHEST) { openChest(hit.bx, hit.by, hit.bz); return; }
@@ -2879,10 +2879,11 @@ function updateBoats(dt) {
       b.pos.y = SEA + 0.5;
       b.mesh.position.copy(b.pos);
       b.mesh.rotation.y = b.yaw;
-      player.pos.set(b.pos.x, b.pos.y + 0.75, b.pos.z);
-      player.vel.set(b.vel.x, 0, b.vel.z);
-      player.yaw = b.yaw;
-      if (keys.ShiftLeft || keys.ShiftRight) { mountedBoat = null; player.pos.x += Math.sin(b.yaw) * 1.5; player.pos.z += Math.cos(b.yaw) * 1.5; player.vel.set(0,0,0); }
+      player.pos.set(b.pos.x, b.pos.y + 0.65, b.pos.z);
+      player.vel.set(0, 0, 0);
+      player.onGround = true; player.swimming = false; player.wasSwim = false;
+      camera.position.copy(player.pos).add(new THREE.Vector3(0, player.EYE, 0));
+      if (keys.ShiftLeft || keys.ShiftRight) { mountedBoat = null; player.pos.x += Math.sin(b.yaw) * 1.5; player.pos.z += Math.cos(b.yaw) * 1.5; player.vel.set(0,0,0); toast('Left boat'); }
     } else {
       if (getBlock(Math.floor(b.pos.x), Math.floor(b.pos.y - 1), Math.floor(b.pos.z)) === WATER) b.pos.y = SEA + 0.5;
       b.mesh.position.copy(b.pos);
