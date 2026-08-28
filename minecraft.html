@@ -467,7 +467,7 @@ const PLACEABLE = [
   DIAMOND_ORE, NETHERRACK, SOUL_SAND, NETHERITE_BLOCK, SANDSTONE, CACTUS, END_STONE, OBSIDIAN, DRAGON_EGG, CHERRY_LEAVES,
   STAIRS_OAK, STAIRS_COBBLE, DOOR, TORCH, BED, HOLYSTONE, SKYROOT_LOG, SKYROOT_LEAVES, CHEST, WATER_BUCKET, LAVA_BUCKET, BOAT, TNT,
 ];
-let HOTBAR = [GRASS, STONE, PLANKS, GLASS, BRICKS, GLOWSTONE, LOG, NETHERITE_BLOCK, FLINT_AND_STEEL, TNT];
+let HOTBAR = [GRASS, STONE, PLANKS, GLASS, BRICKS, GLOWSTONE, LOG, NETHERITE_BLOCK, FLINT_AND_STEEL];
 
 const nameOf = id => id === FLINT_AND_STEEL ? 'Flint & Steel'
   : id === WATER_BUCKET ? 'Water Bucket'
@@ -2672,13 +2672,8 @@ function doAction(btn) {
     if (HOTBAR[selSlot] === FLINT_AND_STEEL) {
       if (tryLightPortal(px2, py2, pz2)) toast('Portal ignited!');
       else if (hit.id === TNT) {
-        // Start TNT fuse
-        const ch = chunks.get(ckey(hit.bx, hit.bz));
-        if (ch) {
-          if (!ch.userData) ch.userData = {};
-          ch.userData.fuse = 100; // 4 second fuse
-          toast('TNT ignited!');
-        }
+        tnts.push({ x: hit.bx, y: hit.by, z: hit.bz, fuse: 80 });
+        toast('TNT ignited!');
       } else fizzleSound();
       return;
     }
@@ -4391,13 +4386,12 @@ function loop(now) {
     updateBoats(dt);
     updateMobs(dt);
     // Update TNT fuses
-    for (const [, ch] of chunks) {
-      if (ch.userData && ch.userData.fuse != null) {
-        ch.userData.fuse -= dt * 20; // 20 ticks per second
-        if (ch.userData.fuse <= 0) {
-          explodeTNT(ch.userData.x || ch.x + 0.5, ch.userData.y || ch.y + 0.5, ch.userData.z || ch.z + 0.5);
-          ch.userData.fuse = null;
-        }
+    for (let i = tnts.length - 1; i >= 0; i--) {
+      const t = tnts[i];
+      t.fuse -= dt * 20;
+      if (t.fuse <= 0) {
+        explodeTNT(t.x, t.y, t.z);
+        tnts.splice(i, 1);
       }
     }
     const hit = raycast();
