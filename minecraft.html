@@ -274,7 +274,7 @@
     <span><b>1-9 / WHEEL</b> hotbar</span><span><b>E</b> all blocks</span><span><b>G</b> creative/survival</span><span><b>ESC</b> pause</span>
     <span><b>F3</b> debug info</span><span><b>/</b> commands</span><span></span><span></span>
   </div>
-  <div class="corner l">VoxelCraft 1.0 &middot; 34 blocks &middot; 5 biomes</div>
+  <div class="corner l">VoxelCraft 1.0 &middot; 38 blocks &middot; 6 biomes</div>
   <div class="corner r">definitely not Minecraft&trade;</div>
 </div>
 
@@ -396,7 +396,7 @@ const AIR = 0, GRASS = 1, DIRT = 2, STONE = 3, SAND = 4, LOG = 5,
       STAIRS_OAK = 40, STAIRS_COBBLE = 44, DOOR = 48, DOOR_OPEN = 49,
       CHERRY_LEAVES = 39,
       END_STONE = 35, END_PORTAL = 36, DRAGON_EGG = 37, OBSIDIAN = 38, CHEST = 56,
-      WATER_BUCKET = 101, LAVA_BUCKET = 102, BOAT = 103, TNT = 104,
+      WATER_BUCKET = 101, LAVA_BUCKET = 102, BOAT = 103, TNT = 104, ACACIA_LOG = 105, ACACIA_LEAVES = 106, VINE = 107,
       FLINT_AND_STEEL = 100;
 
 const BLOCKS = [
@@ -459,13 +459,16 @@ const BLOCKS = [
   { name: 'Chest',          top: 52, side: 52, bot: 52 },
 ];
 BLOCKS[TNT] = { name: 'TNT', top: 53, side: 53, bot: 53 };
+BLOCKS[ACACIA_LOG] = { name: 'Acacia Log', top: 54, side: 55, bot: 54 };
+BLOCKS[ACACIA_LEAVES] = { name: 'Acacia Leaves', top: 56, side: 56, bot: 56, cutout: true };
+BLOCKS[VINE] = { name: 'Vine', top: 57, side: 57, bot: 57, cutout: true, passable: true };
 
 const PLACEABLE = [
   GRASS, DIRT, STONE, COBBLE, SAND, GRAVEL, LOG, PLANKS,
   LEAVES, SPRUCE_LEAVES, GLASS, BRICKS, BOOKSHELF, GLOWSTONE, PUMPKIN, WOOL_WHITE,
   WOOL_RED, WOOL_BLUE, WOOL_YELLOW, SNOW, SNOWY_GRASS, COAL_ORE, IRON_ORE, GOLD_ORE,
   DIAMOND_ORE, NETHERRACK, SOUL_SAND, NETHERITE_BLOCK, SANDSTONE, CACTUS, END_STONE, OBSIDIAN, DRAGON_EGG, CHERRY_LEAVES,
-  STAIRS_OAK, STAIRS_COBBLE, DOOR, TORCH, BED, HOLYSTONE, SKYROOT_LOG, SKYROOT_LEAVES, CHEST, WATER_BUCKET, LAVA_BUCKET, BOAT, TNT,
+  STAIRS_OAK, STAIRS_COBBLE, DOOR, TORCH, BED, HOLYSTONE, SKYROOT_LOG, SKYROOT_LEAVES, CHEST, WATER_BUCKET, LAVA_BUCKET, BOAT, TNT, ACACIA_LOG, ACACIA_LEAVES, VINE,
 ];
 let HOTBAR = [GRASS, STONE, PLANKS, GLASS, BRICKS, GLOWSTONE, LOG, NETHERITE_BLOCK, FLINT_AND_STEEL];
 
@@ -554,7 +557,7 @@ function terrainHeight(x, z) {
   let h = 23 + SURF + cont * 13 + hill * 5 + m * Math.max(0, hill) * 26 + det * (2.4 + smoothstep(0.34, 0.8, bm) * 4.5) + mboost;
   return Math.max(SURF + 3, Math.min(H - 6, Math.floor(h)));
 }
-const BNAMES = { plains: 'Plains', forest: 'Forest', desert: 'Desert', tundra: 'Snowy Tundra', snowy_forest: 'Snowy Forest', taiga: 'Taiga', cherry: 'Cherry Grove', mountains: 'Mountains' };
+const BNAMES = { plains: 'Plains', forest: 'Forest', desert: 'Desert', tundra: 'Snowy Tundra', snowy_forest: 'Snowy Forest', taiga: 'Taiga', cherry: 'Cherry Grove', mountains: 'Mountains', savanna: 'Savanna' };
 function biomeAt(x, z) {
   const t = fbm(x * 0.002, z * 0.002, 2, 3131);
   const h = fbm(x * 0.0023, z * 0.0023, 2, 4141);
@@ -564,6 +567,7 @@ function biomeAt(x, z) {
   if (t > 0.34 && h < -0.05) return 'desert';
   if (t < -0.05) return 'taiga';
   if (t > 0.02 && h > 0.3) return 'cherry';
+  if (t > 0.28 && h > -0.05 && h < 0.18) return 'savanna';
   if (h > 0.12) return 'forest';
   return 'plains';
 }
@@ -579,7 +583,7 @@ function caveAt(x, y, z) {
 function treeAt(x, z) {
   const b = biomeAt(x, z);
   const density = b === 'forest' ? 0.045 : b === 'snowy_forest' ? 0.035 : b === 'taiga' ? 0.05
-    : b === 'cherry' ? 0.02 : b === 'tundra' ? 0.008 : b === 'mountains' ? 0.005
+    : b === 'cherry' ? 0.02 : b === 'savanna' ? 0.03 : b === 'tundra' ? 0.008 : b === 'mountains' ? 0.005
     : b === 'desert' ? 0 : 0.007;
   if (hash2(x * 3 + 1013, z * 3 - 771, 7777) > density) return 0;
   return 4 + Math.floor(hash2(x, z, 9991) * 3);
@@ -758,6 +762,7 @@ atlasCanvas.width = atlasCanvas.height = ATLAS_PX;
   T(20, () => oreTile(216, 171, 133));
   T(21, () => oreTile(250, 220, 100));
   T(22, () => oreTile(96, 222, 214));
+  T(23, () => woolTile(222, 222, 222));
   T(24, () => woolTile(176, 52, 44));
   T(25, () => woolTile(58, 84, 168));
   T(26, () => woolTile(196, 180, 52));
@@ -913,6 +918,10 @@ atlasCanvas.width = atlasCanvas.height = ATLAS_PX;
     c.fillText('TNT', 8, 8);
     c.fillStyle = 'rgba(0,0,0,.2)'; c.fillRect(0, 0, 16, 1); c.fillRect(0, 15, 16, 1);
   });
+  T(54, () => { c.fillStyle = '#9b5e2e'; c.fillRect(0, 0, 16, 16); speck(155, 98, 44, 10); c.fillStyle = 'rgba(90,45,18,.4)'; for(let i=0;i<16;i+=4) c.fillRect(i,0,1,16); });
+  T(55, () => { c.fillStyle = '#b87333'; c.fillRect(0, 0, 16, 16); speck(160, 110, 50, 10); c.fillStyle = 'rgba(0,0,0,.15)'; for(let i=2;i<16;i+=4) c.fillRect(i,0,1,16); c.fillStyle = '#7a3f1a'; c.fillRect(7,0,2,16); });
+  T(56, () => { c.fillStyle = '#3a6b22'; c.fillRect(0, 0, 16, 16); speck(70, 140, 40, 14); c.fillStyle = 'rgba(0,0,0,.08)'; for(let y=0;y<16;y+=3) c.fillRect(0,y,16,1); });
+  T(57, () => { c.clearRect(0, 0, 16, 16); c.fillStyle = '#2d5a18'; c.fillRect(7, 0, 2, 16); for(let y=2;y<14;y+=3){ c.fillStyle = '#3a7a22'; c.fillRect(6, y, 4, 2); c.fillStyle = '#1e3d0f'; c.fillRect(7, y+2, 2, 1);} });
   T(45, () => {
     c.clearRect(0, 0, 16, 16);
     c.fillStyle = '#7a5a30';
@@ -1392,6 +1401,21 @@ function genOverworld(cx, cz) {
       const gh = terrainHeight(wx, wz);
       if (gh <= SEA + 1 || gh >= SURF + 45) continue;
       const lb = biomeAt(wx, wz);
+      if (lb === 'savanna') {
+        for (let ly = th - 1; ly <= th; ly++) {
+          for (let ox = -2; ox <= 2; ox++) for (let oz = -2; oz <= 2; oz++) {
+            if (Math.abs(ox)===2 && Math.abs(oz)===2 && hash2(wx+ox+ly*31,wz+oz,555)<0.5) continue;
+            put(wx+ox, gh+1+ly, wz+oz, ACACIA_LEAVES, true);
+          }
+        }
+        put(wx, gh+1+th+1, wz, ACACIA_LEAVES, true);
+        for (let ty=1; ty<=th; ty++) put(wx, gh+ty, wz, ACACIA_LOG, false);
+        // diagonal branch
+        if (hash2(wx,wz,999)<0.5) { put(wx+1, gh+th, wz, ACACIA_LOG, false); put(wx+1, gh+th+1, wz, ACACIA_LEAVES, true); put(wx+2, gh+th, wz, ACACIA_LEAVES, true); }
+        // vines hanging 2-4 down from canopy edges
+        for (let i=0;i<6;i++){ const ox=(hash2(wx+i*13,wz,777+i*7)%5)-2, oz=(hash2(wx,wz+i*11,778+i*7)%5)-2; if (hash2(wx+ox,wz+oz,779+i)<0.45) continue; const lx=wx+ox,lz=wz+oz,ly=gh+th; if(getBlock(lx,ly,lz)!==ACACIA_LEAVES) continue; const len=2+Math.floor(hash2(lx,lz,780)*3); for(let d=1;d<=len;d++) put(lx, ly-d, lz, VINE, true); }
+        continue;
+      }
       const leafId = (lb === 'snowy_forest' || lb === 'taiga' || lb === 'mountains') ? SPRUCE_LEAVES
         : lb === 'cherry' ? CHERRY_LEAVES : LEAVES;
       for (let ly = th - 2; ly <= th; ly++) {
@@ -3953,7 +3977,7 @@ const worldMenuEl = document.getElementById('worldmenu');
 const createWorldEl = document.getElementById('createworld');
 const settingsEl = document.getElementById('settingsmenu');
 
-const BIOME_LABELS = { any: 'Any', plains: 'Plains', forest: 'Forest', desert: 'Desert', taiga: 'Taiga', cherry: 'Cherry Grove', tundra: 'Snowy Tundra', snowy_forest: 'Snowy Forest', mountains: 'Mountains' };
+const BIOME_LABELS = { any: 'Any', plains: 'Plains', forest: 'Forest', desert: 'Desert', taiga: 'Taiga', cherry: 'Cherry Grove', tundra: 'Snowy Tundra', snowy_forest: 'Snowy Forest', mountains: 'Mountains', savanna: 'Savanna' };
 let newMode = 'survival';
 let newBiome = 'any';
 
@@ -4080,7 +4104,7 @@ const CMD_LIST = [
   { c: 'over', d: 'return to the Overworld' },
   { c: 'seed', d: 'show world seed' },
 ];
-const BIOME_ARGS = ['plains', 'forest', 'desert', 'taiga', 'cherry', 'tundra', 'snowy_forest', 'mountains'];
+const BIOME_ARGS = ['plains', 'forest', 'desert', 'taiga', 'cherry', 'tundra', 'snowy_forest', 'mountains', 'savanna'];
 function updateCmdSuggestions() {
   const raw = cmdInput.value.replace(/^\//, '');
   const parts = raw.split(/\s+/).filter(p => p.length);
