@@ -2848,11 +2848,24 @@ function drawBoatIcon(cv) {
   c.setTransform(1, 0, 0, 1, 0, 0);
   c.clearRect(0, 0, cv.width, cv.height);
   c.fillStyle = '#6b4423';
-  c.fillRect(10, 26, 28, 10);
+  c.fillRect(8, 24, 32, 12);
   c.fillStyle = '#8a5a2a';
-  c.fillRect(12, 28, 24, 4);
+  c.fillRect(11, 26, 26, 6);
   c.fillStyle = '#5a3410';
-  c.fillRect(10, 26, 28, 2);
+  c.fillRect(8, 24, 32, 2);
+  c.fillStyle = '#a87a4a';
+  c.fillRect(12, 27, 24, 1);
+  c.fillStyle = '#3d2812';
+  c.fillRect(7, 30, 2, 3); c.fillRect(39, 30, 2, 3);
+}
+function drawTNTIcon(cv) {
+  const c = cv.getContext('2d');
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.clearRect(0, 0, cv.width, cv.height);
+  c.fillStyle = '#c0392b'; c.fillRect(10, 14, 28, 24);
+  c.fillStyle = '#ffffff'; c.fillRect(10, 22, 28, 8);
+  c.fillStyle = '#000000'; c.font = 'bold 10px monospace'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('TNT', 24, 26);
+  c.strokeStyle = '#7a1f14'; c.lineWidth = 1.5; c.strokeRect(10, 14, 28, 24);
 }
 
 function intersectsPlayer(bx, by, bz) {
@@ -3535,27 +3548,27 @@ function explodeTNT(x, y, z) {
   spawnBurst(x + 0.5, y + 0.5, z + 0.5, new THREE.Color(1, 0.45, 0));
   spawnBurst(x + 0.5, y + 0.8, z + 0.5, new THREE.Color(0.2, 0.2, 0.2));
   burst(120, 0.5, 0.6, 0.5); burst(60, 0.8, 0.4, 0.6);
-  // Damage nearby mobs radius 7
+  // Damage nearby mobs radius 5
   for (const m of mobs) {
     const dx = Math.abs(m.pos.x - x - 0.5);
     const dy = Math.abs(m.pos.y - y - 0.5);
     const dz = Math.abs(m.pos.z - z - 0.5);
     const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-    if (dist < 7) {
-      m.vel.x = (Math.random() - 0.5) * 3;
-      m.vel.z = (Math.random() - 0.5) * 3;
-      m.vel.y = Math.random() * 2.5 + 1;
-      m.hp -= 8 - dist*0.6;
+    if (dist < 6) {
+      m.vel.x = (Math.random() - 0.5) * 2.2;
+      m.vel.z = (Math.random() - 0.5) * 2.2;
+      m.vel.y = Math.random() * 2 + 0.8;
+      m.hp -= 6 - dist*0.4;
     }
   }
-  // Blast blocks in radius 7
-  for (let dx = -7; dx <= 7; dx++) for (let dy = -7; dy <= 7; dy++) for (let dz = -7; dz <= 7; dz++) {
+  // Blast blocks in radius 4.5 - reduced for performance
+  for (let dx = -4; dx <= 4; dx++) for (let dy = -4; dy <= 4; dy++) for (let dz = -4; dz <= 4; dz++) {
     const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
-    if (dist > 6.5) continue;
+    if (dist > 4.5) continue;
     const bx = x + dx, by = y + dy, bz = z + dz;
     const bid = getBlock(bx, by, bz);
     if (bid === AIR || bid === BEDROCK || bid === WATER || bid === LAVA || bid === PORTAL || bid === END_PORTAL || bid === AETHER_PORTAL) continue;
-    if (Math.random() < dist * 0.08) continue;
+    if (Math.random() < dist * 0.12) continue;
     setBlock(bx, by, bz, AIR, true);
     if (Math.random() < 0.3) spawnBurst(bx+0.5, by+0.5, bz+0.5, BLOCK_AVG[bid] || new THREE.Color(0.6,0.5,0.4));
   }
@@ -3675,37 +3688,30 @@ function drawFlintIcon(cv) {
   const c = cv.getContext('2d');
   c.setTransform(1, 0, 0, 1, 0, 0);
   c.clearRect(0, 0, cv.width, cv.height);
-  c.strokeStyle = '#9aa2ad';
-  c.lineWidth = 5;
-  c.beginPath();
-  c.arc(19, 27, 11, -0.6, 2.7);
-  c.stroke();
-  c.fillStyle = '#3a3f46';
-  c.beginPath();
-  c.moveTo(26, 10);
-  c.lineTo(41, 17);
-  c.lineTo(33, 27);
-  c.closePath();
-  c.fill();
-  c.fillStyle = '#ffd873';
-  c.fillRect(35, 7, 4, 4);
-  c.fillRect(30, 5, 3, 3);
+  c.strokeStyle = '#b0b8c4'; c.lineWidth = 5; c.lineCap = 'round';
+  c.beginPath(); c.arc(19, 27, 11, -0.6, 2.7); c.stroke();
+  c.fillStyle = '#3a3f46'; c.beginPath(); c.moveTo(26, 10); c.lineTo(41, 17); c.lineTo(33, 27); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 1; c.stroke();
+  c.fillStyle = '#ffd873'; c.fillRect(35, 7, 4, 4); c.fillRect(30, 5, 3, 3);
+  c.fillStyle = '#ffea9a'; c.fillRect(36, 7, 1, 1);
+}
+function drawChestIcon(cv) {
+  const c = cv.getContext('2d');
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.clearRect(0, 0, cv.width, cv.height);
+  c.fillStyle = '#b5893a'; c.fillRect(11, 16, 26, 20);
+  c.fillStyle = '#8a6b2e'; c.fillRect(11, 16, 26, 2); c.fillRect(11, 34, 26, 2);
+  c.fillStyle = '#5a3d16'; c.fillRect(22, 24, 4, 6); c.fillRect(23, 25, 2, 2);
+  c.fillStyle = '#d4a85c'; c.fillRect(12, 18, 24, 1);
+  c.strokeStyle = '#4a3210'; c.lineWidth = 1.2; c.strokeRect(11, 16, 26, 20);
 }
 
 function drawBlockIcon(cv, id) {
   if (id === FLINT_AND_STEEL) { drawFlintIcon(cv); return; }
   if (id === WATER_BUCKET || id === LAVA_BUCKET) { drawBucketIcon(cv, id === WATER_BUCKET); return; }
   if (id === BOAT) { drawBoatIcon(cv); return; }
-  if (id === CHEST) {
-    const c = cv.getContext('2d');
-    c.setTransform(1, 0, 0, 1, 0, 0);
-    c.clearRect(0, 0, cv.width, cv.height);
-    c.fillStyle = '#b5893a';
-    c.fillRect(12, 18, 24, 18);
-    c.fillStyle = '#5a3d16';
-    c.fillRect(22, 24, 4, 6);
-    return;
-  }
+  if (id === TNT) { drawTNTIcon(cv); return; }
+  if (id === CHEST) { drawChestIcon(cv); return; }
   const info = BLOCKS[id];
   if (!info) return; // <-- ADD THIS GUARD
   const s = cv.width;
